@@ -1,0 +1,81 @@
+@if(details(); as d) {
+    @switch(d.investorType) {
+      @case('شركة') {
+        <div class="bg-white rounded-xl shadow-md p-6 space-y-2">
+          <h2 class="text-xl font-bold text-gray-800 mb-2">بيانات المستثمر (شركة)</h2>
+          
+          <details class="group" open>
+            <summary class="flex justify-between items-center font-medium cursor-pointer list-none p-4 bg-gray-50 rounded-lg hover:bg-gray-100">
+              <span>بيانات الشركة</span>
+              <span class="transition group-open:rotate-180"><i data-lucide="chevron-down"></i></span>
+            </summary>
+            <div class="text-neutral-600 mt-3 p-4 border rounded-lg">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div><p class="font-semibold text-slate-500">رقم الملف:</p><p class="text-slate-800 font-medium">{{d.fileNumber || 'N/A'}}</p></div>
+                  <div><p class="font-semibold text-slate-500">جنسية الشركة:</p><p class="text-slate-800 font-medium">{{d.companyNationality || 'N/A'}}</p></div>
+                  <div class="col-span-1 md:col-span-2"><p class="font-semibold text-slate-500">نشاط الشركة:</p><p class="text-slate-800 font-medium">{{d.companyActivity || 'N/A'}}</p></div>
+              </div>
+            </div>
+          </details>
+
+          <details class="group">
+            <summary class="flex justify-between items-center font-medium cursor-pointer list-none p-4 bg-gray-50 rounded-lg hover:bg-gray-100">
+              <span>البيانات القانونية</span>
+              <span class="transition group-open:rotate-180"><i data-lucide="chevron-down"></i></span>
+            </summary>
+            <div class="text-neutral-600 mt-3 p-4 border rounded-lg">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div><p class="font-semibold text-slate-500">رقم السجل التجاري:</p><p class="text-slate-800 font-medium">{{d.commercialRegNum || 'N/A'}}</p></div>
+                  <div><p class="font-semibold text-slate-500">صلاحية السجل:</p><p class="text-slate-800 font-medium">{{d.commercialRegExpiry || 'N/A'}}</p></div>
+                  <div><p class="font-semibold text-slate-500">رقم البطاقة الضريبية:</p><p class="text-slate-800 font-medium">{{d.taxCardNum || 'N/A'}}</p></div>
+                  <div><p class="font-semibold text-slate-500">صلاحية البطاقة:</p><p class="text-slate-800 font-medium">{{d.taxCardExpiry || 'N/A'}}</p></div>
+              </div>
+            </div>
+          </details>
+
+           <details class="group">
+            <summary class="flex justify-between items-center font-medium cursor-pointer list-none p-4 bg-gray-50 rounded-lg hover:bg-gray-100">
+              <span>رئيس مجلس الإدارة</span>
+              <span class="transition group-open:rotate-180"><i data-lucide="chevron-down"></i></span>
+            </summary>
+            <div class="text-neutral-600 mt-3 p-4 border rounded-lg">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div><p class="font-semibold text-slate-500">الاسم:</p><p class="text-slate-800 font-medium">{{d.chairman?.name || 'N/A'}}</p></div>
+                  <div><p class="font-semibold text-slate-500">الهاتف:</p><p class="text-slate-800 font-medium">{{d.chairman?.phone || 'N/A'}}</p></div>
+              </div>
+            </div>
+          </details>
+
+           <details class="group">
+            <summary class="flex justify-between items-center font-medium cursor-pointer list-none p-4 bg-gray-50 rounded-lg hover:bg-gray-100">
+              <span>الشركاء ({{d.partners?.length || 0}})</span>
+              <span class="transition group-open:rotate-180"><i data-lucide="chevron-down"></i></span>
+            </summary>
+            <div class="text-neutral-600 mt-3 p-4 border rounded-lg">
+                @if (d.partners && d.partners.length > 0) {
+                    @for(partner of d.partners; track partner.name) {
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 bg-gray-50 p-4 rounded-lg border">
+                           <div><p class="font-semibold text-slate-500">اسم الشريك:</p><p class="text-slate-800 font-medium">{{partner.name}}</p></div>
+                           <div><p class="font-semibold text-slate-500">هاتف الشريك:</p><p class="text-slate-800 font-medium">{{partner.phone}}</p></div>
+                        </div>
+                    }
+                } @else {
+                    <p>لا يوجد شركاء مسجلين.</p>
+                }
+            </div>
+          </details>
+        </div>
+      }
+      @case('فرد') {
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">بيانات المستثمر (فرد)</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div><p class="font-semibold text-slate-500">الرقم القومي:</p><p class="text-slate-800 font-medium">{{ d.nationalId || 'N/A' }}</p></div>
+                <div><p class="font-semibold text-slate-500">رقم الهاتف:</p><p class="text-slate-800 font-medium">{{ d.phone || 'N/A' }}</p></div>
+                <div><p class="font-semibold text-slate-500">البريد الإلكتروني:</p><p class="text-slate-800 font-medium">{{ d.email || 'N/A' }}</p></div>
+                <div class="col-span-1 md:col-span-2"><p class="font-semibold text-slate-500">عنوان المراسلة:</p><p class="text-slate-800 font-medium">{{ d.mailingAddress || 'N/A' }}</p></div>
+            </div>
+        </div>
+      }
+    }
+}

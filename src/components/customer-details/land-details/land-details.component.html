@@ -1,0 +1,167 @@
+@if (land(); as land) {
+    <div class="space-y-6 pt-4 border-t-2 border-dashed">
+        <!-- Land Details Card -->
+        <div class="bg-white rounded-xl shadow-md p-6 space-y-4">
+            <div>
+                <h3 class="text-lg font-bold text-gray-800 mb-2">بيانات الأرض</h3>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div><p class="font-semibold text-slate-500">الموقع:</p><p class="text-slate-800 font-medium">{{land.auctionInfo?.landLocation || 'N/A'}}</p></div>
+                    <div><p class="font-semibold text-slate-500">آلية التعامل:</p><p class="text-slate-800 font-medium">{{land.mechanism || 'N/A'}}</p></div>
+                    <div><p class="font-semibold text-slate-500">تاريخ استلام الأرض:</p><p class="text-slate-800 font-medium">{{land.basicInfo?.receiveDate || 'N/A'}}</p></div>
+                     @if (land.mechanism === 'مزاد علني') {
+                        <div><p class="font-semibold text-slate-500">تاريخ جلسة المزاد:</p><p class="text-slate-800 font-medium">{{land.basicInfo?.auctionSessionDate || 'N/A'}}</p></div>
+                    }
+                    <div><p class="font-semibold text-slate-500">مساحة الأرض:</p><p class="text-slate-800 font-medium">{{land.auctionInfo?.landArea || 'N/A'}} فدان</p></div>
+                </div>
+            </div>
+            <div class="border-t pt-4">
+                <h3 class="text-lg font-bold text-gray-800 mb-2">تفاصيل التعامل المالي</h3>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div><p class="font-semibold text-slate-500">قيمة الفدان:</p><p class="text-slate-800 font-medium">{{ dataService.formatCurrency(land.financials?.feddanValue, land.currency) }}</p></div>
+                    <div><p class="font-semibold text-slate-500">القيمة الإيجارية للفدان/عام:</p><p class="text-slate-800 font-medium">{{ dataService.formatCurrency(land.financials?.feddanRentalValue, land.currency) }}</p></div>
+                    <div><p class="font-semibold text-slate-500">{{ land.mechanism === 'مزاد علني' ? 'التأمين الابتدائي' : 'التأمين' }}:</p><p class="text-slate-800 font-medium">{{ dataService.formatCurrency(land.financials?.insurance, land.currency) }}</p></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Financial Summary -->
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">الملخص المالي للأرض: {{ land.auctionInfo?.landLocation || '' }}</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-blue-50 p-4 rounded-lg"><p class="font-semibold text-blue-800">إجمالي المستحق (فواتير):</p><p class="text-blue-900 font-bold text-lg">{{ dataService.formatCurrency(totalDueOnLand(), land.currency) }}</p></div>
+                <div class="bg-green-50 p-4 rounded-lg"><p class="font-semibold text-green-800">إجمالي المسدد:</p><p class="text-green-900 font-bold text-lg">{{ dataService.formatCurrency(totalPaidOnLand(), land.currency) }}</p></div>
+                <div class="bg-red-50 p-4 rounded-lg"><p class="font-semibold text-red-800">إجمالي المتبقي (فواتير):</p><p class="text-red-900 font-bold text-lg">{{ dataService.formatCurrency(totalRemainingOnLand(), land.currency) }}</p></div>
+            </div>
+        </div>
+        
+        <!-- Invoices Table -->
+         <div class="bg-white rounded-xl shadow-md p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-800">الفواتير والمستحقات</h3>
+                <button (click)="openAdvancePaymentModal()" class="px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-md hover:bg-teal-700 flex items-center shadow-sm">
+                    <i data-lucide="plus" class="w-4 h-4 ml-2"></i>
+                    <span>دفع مقدم</span>
+                </button>
+            </div>
+            @if (dueLandInvoices().length > 0) {
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right">
+                        <thead class="border-b"><tr><th class="p-2 text-sm font-semibold text-gray-600">البند</th><th class="p-2 text-sm font-semibold text-gray-600">تاريخ الاستحقاق</th><th class="p-2 text-sm font-semibold text-gray-600">المتبقي</th><th class="p-2 text-sm font-semibold text-gray-600">أيام التأخير</th><th class="p-2 text-sm font-semibold text-gray-600">الحالة</th><th class="p-2 text-sm font-semibold text-gray-600">الإجراءات</th></tr></thead>
+                        <tbody>
+                            @for (inv of dueLandInvoices(); track inv.id) {
+                                @let delay = getDelayDaysForInvoice(inv);
+                                <tr class="border-b hover:bg-gray-50 transition-colors">
+                                    <td class="p-3">{{ inv.description }}</td>
+                                    <td class="p-3">{{ inv.dueDate }}</td>
+                                    <td class="p-3 text-red-600 font-semibold">{{ dataService.formatCurrency(getRemainingAmountForInvoice(inv), inv.currency) }}</td>
+                                    <td class="p-3 font-bold" [class.text-red-500]="delay > 0">{{ delay > 0 ? delay : '-' }}</td>
+                                    <td class="p-3"><span class="px-3 py-1 text-xs font-medium rounded-full" [class]="getStatusBadgeClass(dataService.getInvoiceDisplayStatus(inv))">{{ dataService.getInvoiceDisplayStatus(inv) }}</span></td>
+                                    <td class="p-3">
+                                        <div class="flex items-center gap-1">
+                                            <button (click)="openReminderConfirmModal(inv)" class="p-2 rounded-md hover:bg-blue-100 text-blue-600" title="تذكير"><i data-lucide="bell" class="w-4 h-4"></i></button>
+                                            <button (click)="openReminderLogModal(inv)" class="p-2 rounded-md hover:bg-gray-100 text-gray-600" [disabled]="!inv.reminderLog?.length" title="عرض السجل"><i data-lucide="history" class="w-4 h-4"></i></button>
+                                            <button (click)="openPaymentModal(inv)" class="p-2 rounded-md hover:bg-green-100 text-green-600" title="تسجيل دفعة"><i data-lucide="dollar-sign" class="w-4 h-4"></i></button>
+                                            <button (click)="openInvoiceDetailsModal(inv)" class="p-2 rounded-md hover:bg-indigo-100 text-indigo-600" title="عرض التفاصيل"><i data-lucide="file-text" class="w-4 h-4"></i></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            } @else {
+                 <div class="text-center p-4 bg-gray-50 rounded-lg">
+                    <p class="text-gray-500">لا توجد فواتير مستحقة حالياً لهذه الأرض.</p>
+                 </div>
+            }
+        </div>
+
+        <!-- Future Installments Table -->
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">جدول السداد المستقبلي</h3>
+            @if (futureInstallments().length > 0) {
+                <div class="overflow-x-auto max-h-96">
+                    <table class="w-full text-right">
+                        <thead class="border-b sticky top-0 bg-white">
+                            <tr>
+                                <th class="p-2 text-sm font-semibold text-gray-600">الفترة</th>
+                                <th class="p-2 text-sm font-semibold text-gray-600">المبلغ</th>
+                                <th class="p-2 text-sm font-semibold text-gray-600">تاريخ الاستحقاق</th>
+                                <th class="p-2 text-sm font-semibold text-gray-600">الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (inst of futureInstallments(); track inst.dueDate + inst.period) {
+                                <tr class="border-b hover:bg-gray-50 transition-colors">
+                                    <td class="p-3">{{ inst.period }}</td>
+                                    <td class="p-3 font-medium">
+                                        @if (inst.status === 'مدفوع جزئياً مقدماً') {
+                                            <div>
+                                                <span class="font-bold">{{ dataService.formatCurrency(inst.remainingAmount, land.currency) }}</span>
+                                                <span class="block text-xs text-slate-500">من أصل {{ dataService.formatCurrency(inst.originalAmount, land.currency) }}</span>
+                                            </div>
+                                        } @else if (inst.status === 'مدفوع مقدماً') {
+                                            <span class="text-slate-500 line-through">{{ dataService.formatCurrency(inst.originalAmount, land.currency) }}</span>
+                                        } @else {
+                                            {{ dataService.formatCurrency(inst.originalAmount, land.currency) }}
+                                        }
+                                    </td>
+                                    <td class="p-3">{{ inst.dueDate }}</td>
+                                    <td class="p-3">
+                                        <div class="flex items-center gap-2">
+                                            <span class="px-3 py-1 text-xs font-medium rounded-full" [class]="getStatusBadgeClass(inst.status)">
+                                                {{ inst.status }}
+                                            </span>
+                                            @if (inst.status === 'مدفوع مقدماً' || inst.status === 'مدفوع جزئياً مقدماً') {
+                                                <div class="relative group">
+                                                    <i data-lucide="info" class="w-4 h-4 text-sky-600 cursor-pointer"></i>
+                                                    <div class="absolute z-10 bottom-full mb-2 -right-1/2 transform translate-x-1/2 w-64 p-2 text-xs font-normal text-white bg-gray-900 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                                                        <h4 class="font-bold border-b border-gray-600 pb-1 mb-1">المدفوعات المطبقة:</h4>
+                                                        <ul class="space-y-1">
+                                                            @for (p of inst.appliedPayments; track p.paymentId) {
+                                                                <li class="flex justify-between">
+                                                                    <span>{{p.paymentId}} ({{p.paymentDate}}):</span>
+                                                                    <span class="font-semibold">{{ dataService.formatCurrency(p.amountApplied, land.currency) }}</span>
+                                                                </li>
+                                                            }
+                                                        </ul>
+                                                         <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 transform rotate-45"></div>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            } @else {
+                 <div class="text-center p-4 bg-gray-50 rounded-lg">
+                    <p class="text-gray-500">لا يمكن إنشاء جدول سداد لهذه الأرض.</p>
+                 </div>
+            }
+        </div>
+
+        <!-- Payments Table -->
+         <div class="bg-white rounded-xl shadow-md p-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">سجل المدفوعات</h3>
+             @if (landPayments().length > 0) {
+                 <div class="overflow-x-auto">
+                    <table class="w-full text-right">
+                        <thead class="border-b"><tr><th class="p-2 text-sm font-semibold text-gray-600">رقم الإيصال</th><th class="p-2 text-sm font-semibold text-gray-600">بند الدفع</th><th class="p-2 text-sm font-semibold text-gray-600">تاريخ الدفع</th><th class="p-2 text-sm font-semibold text-gray-600">المبلغ</th><th class="p-2 text-sm font-semibold text-gray-600">الإجراء</th></tr></thead>
+                        <tbody>
+                            @for(p of landPayments(); track p.paymentId) {
+                            <tr class="border-b hover:bg-gray-50 transition-colors"><td class="p-3">{{ p.paymentId }}</td><td class="p-3">{{ p.description }}</td><td class="p-3">{{ p.paymentDate }}</td><td class="p-3 font-semibold text-green-700">{{ dataService.formatCurrency(p.amount, p.currency) }}</td><td class="p-3"><button (click)="openPaymentDetailsModal(p)" class="text-sky-600 hover:underline font-semibold">عرض التفاصيل</button></td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            } @else {
+                 <div class="text-center p-4 bg-gray-50 rounded-lg">
+                    <p class="text-gray-500">لم تتم أي مدفوعات لهذه الأرض بعد.</p>
+                 </div>
+            }
+        </div>
+    </div>
+}

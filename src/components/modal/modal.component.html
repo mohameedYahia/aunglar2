@@ -1,0 +1,451 @@
+@if (modalState(); as state) {
+  @if (state.type) {
+    <div 
+      class="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center p-4 transition-opacity duration-300" 
+      (click)="close()">
+      <div 
+        class="bg-white rounded-xl shadow-2xl w-full max-w-4xl transform transition-transform duration-300 scale-95" 
+        [class.scale-100]="state.type"
+        (click)="$event.stopPropagation()">
+        
+        <!-- Modal Header -->
+        <div class="flex justify-between items-center p-4 border-b">
+          @switch (state.type) {
+            @case ('reminderConfirm') { <h3 class="text-lg font-bold text-slate-800">تأكيد إرسال تذكير</h3> }
+            @case ('reminderLog') { <h3 class="text-lg font-bold text-slate-800">سجل التذكيرات للفاتورة: {{ state.data.id }}</h3> }
+            @case ('paymentDetails') { <h3 class="text-lg font-bold text-slate-800">تفاصيل الدفعة: {{ state.data.paymentId }}</h3> }
+            @case ('payment') { <h3 class="text-lg font-bold text-slate-800">تسجيل دفعة للفاتورة: {{ state.data.id }}</h3> }
+            @case ('warning') { <h3 class="text-lg font-bold text-slate-800">إصدار إنذار للفاتورة: {{ state.data.id }}</h3> }
+            @case ('invoiceDetails') { <h3 class="text-lg font-bold text-slate-800">تفاصيل الفاتورة: {{ state.data.id }}</h3> }
+            @case ('warningDetails') { <h3 class="text-lg font-bold text-slate-800">تفاصيل الإنذار المرسل</h3> }
+            @case ('financialPayment') { <h3 class="text-lg font-bold text-slate-800">تسجيل دفعة للفاتورة: {{ state.data.id }}</h3> }
+            @case ('investorDetails') { <h3 class="text-lg font-bold text-slate-800">تفاصيل المستثمر</h3> }
+            @case ('paymentReceipt') { <h3 class="text-lg font-bold text-slate-800">إيصال السداد: {{ state.data.paymentId }}</h3> }
+            @case ('advancePayment') { <h3 class="text-lg font-bold text-slate-800">تسجيل دفعة مقدمة</h3> }
+            @case ('paymentConfirmation') { <h3 class="text-lg font-bold text-slate-800">تأكيد عملية الدفع</h3> }
+            @case ('paymentRejection') { <h3 class="text-lg font-bold text-slate-800">رفض عملية الدفع</h3> }
+            @case ('paymentEdit') { <h3 class="text-lg font-bold text-slate-800">تعديل بيانات الدفعة: {{ state.data.paymentId }}</h3> }
+            @case ('paymentRevenueDetails') { <h3 class="text-lg font-bold text-slate-800">تفاصيل السداد</h3> }
+            @case ('investorFinancialSummary') { <h3 class="text-lg font-bold text-slate-800">تفاصيل المستثمر</h3> }
+            @case ('tempInsuranceDetails') { <h3 class="text-lg font-bold text-slate-800">تفاصيل تحصيل التأمين المؤقت</h3> }
+          }
+          <button (click)="close()" class="p-2 rounded-full text-slate-500 hover:bg-slate-100"><i data-lucide="x"></i></button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-6 modal-body max-h-[70vh] overflow-y-auto">
+          @switch (state.type) {
+            @case ('reminderConfirm') {
+              <div>
+                <p>هل أنت متأكد من رغبتك في إرسال تذكير جديد بخصوص الفاتورة رقم <strong class="font-bold">{{ state.data.id }}</strong>؟</p>
+                <p class="mt-2 text-sm text-slate-600">سيتم تسجيل هذا الإجراء في سجل الفاتورة باسم المستخدم الحالي.</p>
+              </div>
+            }
+            @case ('reminderLog') {
+              @if (state.data.reminderLog && state.data.reminderLog.length > 0) {
+                <ul class="space-y-3">
+                  @for (log of state.data.reminderLog; track log.date) {
+                    <li class="flex items-start gap-3 p-3 bg-slate-50 rounded-lg">
+                      <i data-lucide="user-check" class="text-slate-500 mt-1"></i>
+                      <div>
+                        <p class="font-semibold text-slate-700">{{ log.user }}</p>
+                        <p class="text-sm text-slate-500">{{ log.date | date:'long' }}</p>
+                      </div>
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p class="text-slate-600 text-center p-4">لا توجد تذكيرات مسجلة لهذه الفاتورة.</p>
+              }
+            }
+            @case ('paymentDetails') {
+              @if (getPaymentDetails(); as details) {
+                <div>
+                  <!-- Tab Navigation -->
+                  <nav class="flex border-b mb-6">
+                    <button (click)="setActiveTab('collection')" [class]="activeTab() === 'collection' ? 'border-sky-500 text-sky-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="py-3 px-4 font-medium border-b-2 transition-colors">ملخص التحصيل</button>
+                    <button (click)="setActiveTab('details')" [class]="activeTab() === 'details' ? 'border-sky-500 text-sky-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="py-3 px-4 font-medium border-b-2 transition-colors">تفاصيل الدفع</button>
+                    <button (click)="setActiveTab('notes')" [class]="activeTab() === 'notes' ? 'border-sky-500 text-sky-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'" class="py-3 px-4 font-medium border-b-2 transition-colors">الملاحظات</button>
+                  </nav>
+                  <!-- Tab Content -->
+                  <div>
+                    @if (activeTab() === 'collection') {
+                      <div class="space-y-4 p-4 bg-blue-50 rounded-lg">
+                        <h4 class="text-md font-bold text-slate-700">ملخص الفاتورة المرتبطة</h4>
+                        @if (details.invoice; as invoice) {
+                          <div class="grid grid-cols-2 gap-4">
+                            <div><p class="font-semibold text-slate-500">رقم الفاتورة:</p><p class="text-slate-800 font-medium">{{ invoice.id }}</p></div>
+                            <div><p class="font-semibold text-slate-500">قيمة الفاتورة الأصلية:</p><p class="text-slate-800 font-medium">{{ dataService.formatCurrency(invoice.originalAmount, invoice.currency) }}</p></div>
+                            <div><p class="font-semibold text-slate-500">إجمالي المدفوع للفاتورة:</p><p class="text-slate-800 font-medium">{{ dataService.formatCurrency(details.paidAmountForInvoice, invoice.currency) }}</p></div>
+                            <div><p class="font-semibold text-slate-500">المتبقي من الفاتورة:</p><p class="text-slate-800 font-medium">{{ dataService.formatCurrency(details.remainingAmount, invoice.currency) }}</p></div>
+                          </div>
+                        } @else {
+                          <p class="text-slate-600">هذه الدفعة غير مرتبطة بفاتورة محددة.</p>
+                        }
+                      </div>
+                    }
+                    @if (activeTab() === 'details') {
+                      <div class="space-y-4 p-4 bg-gray-50 rounded-lg">
+                         <h4 class="text-md font-bold text-slate-700">تفاصيل عملية الدفع</h4>
+                         <div class="grid grid-cols-2 gap-4">
+                          <div><p class="font-semibold text-slate-500">تاريخ الدفع:</p><p class="text-slate-800 font-medium">{{ details.payment.paymentDate }}</p></div>
+                          <div><p class="font-semibold text-slate-500">المبلغ:</p><p class="text-green-700 font-bold text-lg">{{ dataService.formatCurrency(details.payment.amount, details.payment.currency) }}</p></div>
+                          <div><p class="font-semibold text-slate-500">طريقة الدفع:</p><p class="text-slate-800 font-medium">{{ details.payment.method }}</p></div>
+                          @if(details.payment.method === 'تحويل بنكي' && details.payment.details?.bankName) {
+                            <div><p class="font-semibold text-slate-500">اسم البنك:</p><p class="text-slate-800 font-medium">{{ details.payment.details.bankName }}</p></div>
+                            <div><p class="font-semibold text-slate-500">رقم التحويل:</p><p class="text-slate-800 font-medium">{{ details.payment.details.transferId }}</p></div>
+                          }
+                          @if(details.payment.method === 'شيك' && details.payment.details?.chequeNumber) {
+                            <div><p class="font-semibold text-slate-500">رقم الشيك:</p><p class="text-slate-800 font-medium">{{ details.payment.details.chequeNumber }}</p></div>
+                             <div><p class="font-semibold text-slate-500">تاريخ الاستحقاق:</p><p class="text-slate-800 font-medium">{{ details.payment.details.dueDate }}</p></div>
+                          }
+                         </div>
+                      </div>
+                    }
+                    @if (activeTab() === 'notes') {
+                       <div class="space-y-2 p-4 bg-yellow-50 rounded-lg">
+                         <h4 class="text-md font-bold text-slate-700">الملاحظات المسجلة</h4>
+                         @if (details.payment.notes) {
+                          <div class="text-yellow-800 border-yellow-200">
+                            <p>{{ details.payment.notes }}</p>
+                          </div>
+                         } @else {
+                           <p class="text-slate-600">لا توجد ملاحظات مسجلة لهذه الدفعة.</p>
+                         }
+                       </div>
+                    }
+                  </div>
+                </div>
+              }
+            }
+            @case ('payment') {
+              @if (state.data; as invoice) {
+                <div class="space-y-6">
+                  @if(paymentError(); as error) {
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                      <strong class="font-bold">خطأ!</strong>
+                      <span class="block sm:inline ml-2">{{ error }}</span>
+                    </div>
+                  }
+                  <div class="p-4 border rounded-lg bg-yellow-50 border-yellow-200">
+                    <h4 class="font-bold text-yellow-800 mb-2">حساب غرامة التأخير</h4>
+                    <p class="text-xs text-yellow-700 mb-3">المعادلة: (المبلغ المستحق × 21.75% × عدد أيام التأخير) ÷ 365</p>
+                    <div class="grid grid-cols-3 gap-4 items-end">
+                      <div><label class="block text-xs font-medium text-slate-600 mb-1">أصل المبلغ المستحق</label><input type="number" [ngModel]="lateFeeOriginalAmount()" readonly class="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-md text-sm"></div>
+                      <div><label class="block text-xs font-medium text-slate-600 mb-1">أيام التأخير</label><input type="number" [ngModel]="lateFeeDelayDays()" readonly class="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-md text-sm"></div>
+                      <div><label class="block text-xs font-medium text-slate-600 mb-1">قيمة الغرامة</label><div class="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-md text-sm font-bold text-slate-700">{{ calculatedLateFee() | number:'1.2-2' }} جنيه</div></div>
+                    </div>
+                    <div class="mt-3 flex items-center"><input type="checkbox" [(ngModel)]="lateFee" id="lateFeeCheck" class="h-4 w-4 text-sky-600 border-gray-300 rounded focus:ring-sky-500"><label for="lateFeeCheck" class="mr-2 text-sm text-slate-900 font-medium">تطبيق الغرامة</label></div>
+                  </div>
+                  <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div><label class="block text-sm font-medium text-slate-700 mb-1">تاريخ الاستحقاق</label><input type="date" readonly [value]="invoice.dueDate" class="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-md text-sm"></div>
+                    <div><label class="block text-sm font-medium text-slate-700 mb-1">تاريخ الدفع</label><input type="date" [(ngModel)]="paymentDate" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm"></div>
+                    <div class="bg-blue-50 p-3 rounded-lg text-center"><label class="block text-sm font-medium text-blue-800">إجمالي المستحق</label><p class="text-blue-900 font-bold text-lg">{{ dataService.formatCurrency(totalAmountDueWithFee(), invoice.currency) }}</p></div>
+                    <div class="bg-green-50 p-3 rounded-lg"><label for="paymentAmountInput" class="block text-sm font-medium text-green-800">المبلغ المحصل</label><input id="paymentAmountInput" type="number" [(ngModel)]="paymentAmount" class="mt-1 block w-full px-3 py-1.5 bg-white border border-green-300 rounded-md text-sm shadow-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 font-bold" placeholder="0.00"></div>
+                    <div class="bg-red-50 p-3 rounded-lg text-center"><label class="block text-sm font-medium text-red-800">المبلغ المتبقي</label><p class="text-red-900 font-bold text-lg">{{ dataService.formatCurrency(remainingAfterPayment(), invoice.currency) }}</p></div>
+                  </div>
+                  <div><label class="block text-sm font-medium text-slate-700">بند الدفع</label><input type="text" readonly [value]="invoice.description" class="mt-1 block w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-md text-sm"></div>
+                  <div><label for="paymentMethodSelect" class="block text-sm font-medium text-slate-700">طريقة الدفع</label><select id="paymentMethodSelect" [(ngModel)]="paymentMethod" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm rounded-md bg-white"><option value="نقدي">نقدي</option><option value="تحويل بنكي">تحويل بنكي</option><option value="شيك">شيك</option></select></div>
+                  @switch (paymentMethod()) { 
+                    @case('نقدي') { <div class="grid grid-cols-2 gap-4"><div><label class="block text-sm font-medium text-slate-600">اسم المستلم</label><input type="text" [(ngModel)]="paymentCashRecipient" class="mt-1 w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm"></div><div><label class="block text-sm font-medium text-slate-600">رقم الخزينة</label><input type="text" [(ngModel)]="paymentCashTreasury" class="mt-1 w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm"></div></div> }
+                    @case('تحويل بنكي') { <div class="grid grid-cols-2 gap-4"><div><label class="block text-sm font-medium text-slate-600">رقم الإيداع</label><input type="text" [(ngModel)]="paymentBankDepositId" class="mt-1 w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm"></div><div><label class="block text-sm font-medium text-slate-600">تاريخ الإيداع</label><input type="date" [(ngModel)]="paymentBankDate" class="mt-1 w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm"></div></div> }
+                    @case('شيك') { <div class="grid grid-cols-2 gap-4"><div><label class="block text-sm font-medium text-slate-600">رقم الشيك</label><input type="text" [(ngModel)]="paymentChequeNumber" class="mt-1 w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm"></div><div><label class="block text-sm font-medium text-slate-600">تاريخ الاستحقاق</label><input type="date" [(ngModel)]="paymentChequeDate" class="mt-1 w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm"></div></div> }
+                   }
+                  <div><label class="block text-sm font-medium text-slate-700">ملاحظات الدفعة</label><textarea [(ngModel)]="paymentNotes" rows="3" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm"></textarea></div>
+                  <div><label class="block text-sm font-medium text-slate-700">مرفقات</label><input type="file" class="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100"/></div>
+                </div>
+              }
+            }
+            @case ('warning') {
+              @if(warningData(); as data) {
+                <div class="space-y-4">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div><label for="warningDeadlineInput" class="block text-sm font-medium text-slate-700">الموعد النهائي للسداد</label><input id="warningDeadlineInput" type="date" [(ngModel)]="warningDeadline" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm"></div>
+                    <div><label class="block text-sm font-medium text-slate-700">طريقة الارسال</label><div class="flex items-center space-x-4 space-x-reverse mt-2"><label class="flex items-center text-sm"><input type="checkbox" [(ngModel)]="warningDeliveryMethods().email" class="w-4 h-4 text-sky-600 border-slate-300 rounded focus:ring-sky-500 ml-2"> ايميل</label><label class="flex items-center text-sm"><input type="checkbox" [(ngModel)]="warningDeliveryMethods().platform" class="w-4 h-4 text-sky-600 border-slate-300 rounded focus:ring-sky-500 ml-2"> حساب العميل علي المنصة</label><label class="flex items-center text-sm"><input type="checkbox" [(ngModel)]="warningDeliveryMethods().registeredMail" class="w-4 h-4 text-sky-600 border-slate-300 rounded focus:ring-sky-500 ml-2"> بريد مسجل</label></div></div>
+                  </div>
+                  <div class="border-t pt-4"><h4 class="font-semibold mb-2">معاينة الإنذار</h4><div class="p-4 border rounded-lg max-h-60 overflow-y-auto bg-slate-50 text-sm" [innerHTML]="warningPreview()"></div></div>
+                </div>
+              }
+            }
+            @case ('invoiceDetails') {
+              @if (invoiceDetailsData(); as details) {
+                <div class="space-y-6">
+                  <div class="p-4 bg-slate-50 rounded-lg"><h4 class="text-md font-bold text-slate-700 mb-3">بيانات عامة</h4><div class="grid grid-cols-2 gap-4 text-sm"><div><p class="font-semibold text-slate-500">رقم الفاتورة:</p><p class="text-slate-800 font-bold">{{ details.invoice.id }}</p></div><div><p class="font-semibold text-slate-500">العميل:</p><p class="text-slate-800 font-medium">{{ details.customerName }}</p></div><div class="col-span-2"><p class="font-semibold text-slate-500">الوصف:</p><p class="text-slate-800 font-medium">{{ details.invoice.description }}</p></div><div class="col-span-2"><p class="font-semibold text-slate-500">الأرض المرتبطة:</p><p class="text-slate-800 font-medium">{{ details.land?.auctionInfo.landLocation || 'غير محدد' }} ({{ details.invoice.landId }})</p></div> @if(details.land) { <div><p class="font-semibold text-slate-500">آلية التعامل:</p><p class="text-slate-800 font-medium">{{ details.land.mechanism }}</p></div><div><p class="font-semibold text-slate-500">تاريخ الاستلام:</p><p class="text-slate-800 font-medium">{{ details.land.basicInfo.receiveDate }}</p></div> }</div></div>
+                  <div class="space-y-2"><h4 class="text-md font-bold text-slate-700 mb-3">البيانات المالية</h4><div class="grid grid-cols-3 gap-4"><div class="bg-blue-50 text-blue-800 p-3 rounded-lg text-center"><p class="text-sm font-semibold">المبلغ الأصلي</p><p class="font-bold text-lg">{{ dataService.formatCurrency(details.invoice.originalAmount, details.invoice.currency) }}</p></div><div class="bg-green-50 text-green-800 p-3 rounded-lg text-center"><p class="text-sm font-semibold">المدفوع حتى الآن</p><p class="font-bold text-lg">{{ dataService.formatCurrency(details.paidAmount, details.invoice.currency) }}</p></div><div class="bg-red-50 text-red-700 p-3 rounded-lg text-center"><p class="text-sm font-semibold">المتبقي</p><p class="font-bold text-lg">{{ dataService.formatCurrency(details.remainingAmount, details.invoice.currency) }}</p></div></div></div>
+                  <div><div class="grid grid-cols-3 gap-4 text-sm items-center"><div><p class="font-semibold text-slate-500">تاريخ الاستحقاق:</p><p class="text-slate-800 font-medium">{{ details.invoice.dueDate }}</p></div><div><p class="font-semibold text-slate-500">أيام التأخير:</p><p class="font-bold text-red-600">{{ details.delayDays > 0 ? details.delayDays + ' يوم' : '-' }}</p></div><div><p class="font-semibold text-slate-500 mb-1">الحالة:</p><span class="px-3 py-1 text-xs font-medium rounded-full" [class]="details.statusClass">{{ details.status }}</span></div></div></div>
+                </div>
+              }
+            }
+            @case ('warningDetails') {
+              @if (warningDetailsData(); as details) {
+                <div class="space-y-4">
+                   <div class="p-4 bg-slate-50 rounded-lg"><h4 class="text-md font-bold text-slate-700 mb-3">بيانات الإنذار</h4><div class="grid grid-cols-2 gap-4 text-sm"><div><p class="font-semibold text-slate-500">رقم الفاتورة:</p><p class="text-slate-800 font-bold">{{ details.warning.invoiceId }}</p></div><div><p class="font-semibold text-slate-500">العميل:</p><p class="text-slate-800 font-medium">{{ details.customerName }}</p></div><div><p class="font-semibold text-slate-500">تاريخ الإرسال:</p><p class="text-slate-800 font-medium">{{ details.warning.timestamp }}</p></div><div><p class="font-semibold text-slate-500">الموعد النهائي المسجل:</p><p class="text-slate-800 font-medium">{{ details.warning.deadline }}</p></div><div class="col-span-2"><p class="font-semibold text-slate-500">طرق الإرسال:</p><p class="text-slate-800 font-medium">{{ details.warning.deliveryMethods?.join(', ') }}</p></div></div></div>
+                  <div class="border-t pt-4"><h4 class="font-semibold mb-2">محتوى الإنذار المرسل</h4><div class="p-4 border rounded-lg max-h-60 overflow-y-auto bg-slate-50 text-sm" [innerHTML]="details.warning.content"></div></div>
+                </div>
+              }
+            }
+            @case ('financialPayment') {
+              @if (state.data; as invoice) {
+                <div class="space-y-6">
+                  @if(paymentError(); as error) { <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4" role="alert"><p>{{ error }}</p></div> }
+                  <div class="p-4 rounded-lg bg-yellow-50"><h4 class="font-bold text-yellow-800 mb-2">حساب غرامة التأخير</h4><div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center"><div><label class="block text-sm font-medium text-slate-600 mb-1">أصل المبلغ</label><div class="w-full px-3 py-2 bg-gray-200 border rounded-md text-sm">{{dataService.formatCurrency(lateFeeOriginalAmount() || 0, invoice.currency)}}</div></div><div><label class="block text-sm font-medium text-slate-600 mb-1">أيام التأخير</label><div class="w-full px-3 py-2 bg-white border rounded-md text-sm">{{lateFeeDelayDays()}}</div></div><div><label class="block text-sm font-medium text-slate-600 mb-1">قيمة الغرامة</label><div class="w-full px-3 py-2 bg-white border rounded-md text-sm font-bold text-red-600">{{dataService.formatCurrency(calculatedLateFee(), invoice.currency)}}</div></div><div class="pt-6"><div class="flex items-center"><input type="checkbox" id="applyFee" [(ngModel)]="lateFee" class="h-4 w-4 text-sky-600 border-gray-300 rounded focus:ring-sky-500"><label for="applyFee" class="mr-2 text-sm font-medium">✔️ تطبيق الغرامة</label></div></div></div></div>
+                  <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end"><div><label class="block text-sm font-medium text-slate-700 mb-1">تاريخ الاستحقاق</label><input type="date" readonly [value]="invoice.dueDate" class="w-full px-3 py-2 bg-gray-200 border rounded-md text-sm"></div><div><label class="block text-sm font-medium text-slate-700 mb-1">تاريخ الدفع</label><input type="date" [(ngModel)]="paymentDate" class="w-full px-3 py-2 bg-white border rounded-md text-sm"></div><div class="p-3 rounded-lg bg-blue-50 text-center"><label class="block text-sm font-medium text-blue-800">إجمالي المستحق</label><p class="text-blue-800 font-bold text-lg">{{ dataService.formatCurrency(totalAmountDueWithFee(), invoice.currency) }}</p></div><div class="p-3 rounded-lg bg-green-50"><label class="block text-sm font-medium text-green-800">المبلغ المحصل</label><input type="number" [(ngModel)]="paymentAmount" class="mt-1 w-full px-2 py-1.5 border-green-300 rounded-md font-bold" placeholder="0.00"></div><div class="p-3 rounded-lg bg-red-50 text-center"><label class="block text-sm font-medium text-red-800">المبلغ المتبقي</label><p class="text-red-800 font-bold text-lg">{{ dataService.formatCurrency(remainingAfterPayment(), invoice.currency) }}</p></div></div>
+                  <div><label class="block text-sm font-medium text-slate-700 mb-1">طريقة الدفع</label><select [(ngModel)]="paymentMethod" class="w-full p-2 border rounded-md bg-white"><option value="نقدي">نقدي</option><option value="تحويل بنكي">تحويل بنكي</option><option value="شيك">شيك</option></select></div>
+                  <div><label class="block text-sm font-medium text-slate-700 mb-1">إرفاق مستند</label><div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md"><div class="space-y-1 text-center"><i data-lucide="upload-cloud" class="mx-auto h-12 w-12 text-gray-400"></i><div class="flex text-sm text-gray-600"><label for="file-upload" class="relative cursor-pointer bg-white rounded-md font-medium text-sky-600 hover:text-sky-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-sky-500"><span>تحميل ملف</span><input id="file-upload" name="file-upload" type="file" class="sr-only"></label><p class="pl-1">أو اسحب وأفلت</p></div><p class="text-xs text-gray-500">PNG, JPG, PDF up to 10MB</p></div></div></div>
+                </div>
+              }
+            }
+            @case ('investorDetails') {
+              @if (investorDetailsData(); as data) {
+                <div class="space-y-6" id="investor-details-content">
+                  <div class="p-4 bg-blue-50 rounded-lg"><h4 class="text-lg font-bold text-blue-800">معلومات المستثمر</h4><div class="grid grid-cols-2 gap-4 mt-2"><div><p class="text-sm font-medium text-slate-500">اسم العميل:</p><p>{{ data.customer?.name }}</p></div><div><p class="text-sm font-medium text-slate-500">رقم الملف:</p><p>{{ data.customerDetails?.fileNumber || 'N/A' }}</p></div></div></div>
+                  @if(data.land; as land) { <div class="p-4 border rounded-lg"><h4 class="text-lg font-bold text-slate-800">بيانات الأرض</h4><div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2"><div><p class="text-sm font-medium text-slate-500">المساحة:</p><p>{{ land.auctionInfo.landArea }} فدان</p></div><div><p class="text-sm font-medium text-slate-500">قيمة الإيجار/فدان:</p><p>{{ dataService.formatCurrency(land.financials.feddanRentalValue, land.currency) }}</p></div><div><p class="text-sm font-medium text-slate-500">القيمة الإجمالية:</p><p>{{ dataService.formatCurrency(land.baseRent, land.currency) }}</p></div><div><p class="text-sm font-medium text-slate-500">التأمين:</p><p>{{ dataService.formatCurrency(land.financials.insurance, land.currency) }}</p></div><div><p class="text-sm font-medium text-slate-500">تاريخ الاستلام:</p><p>{{ land.basicInfo.receiveDate }}</p></div></div></div> }
+                  <div class="p-4 bg-gray-50 rounded-lg"><h4 class="text-lg font-bold text-slate-800">الملخص المالي</h4><div class="grid grid-cols-3 gap-4 mt-2 text-center"><div><p class="text-sm font-medium">المبلغ المستحق</p><p class="text-lg font-bold">{{ dataService.formatCurrency(data.totalDue, data.invoice.currency) }}</p></div><div><p class="text-sm font-medium text-green-600">المبلغ المحصل</p><p class="text-lg font-bold text-green-600">{{ dataService.formatCurrency(data.totalPaid, data.invoice.currency) }}</p></div><div><p class="text-sm font-medium text-red-600">المبلغ المتأخر</p><p class="text-lg font-bold text-red-600">{{ dataService.formatCurrency(data.totalOverdue, data.invoice.currency) }}</p></div></div></div>
+                </div>
+              }
+            }
+            @case ('paymentReceipt') {
+              @if (paymentReceiptData(); as data) {
+                <div class="space-y-6" id="payment-receipt-content">
+                  <div class="p-4 bg-slate-50 rounded-lg"><h4 class="text-lg font-bold text-slate-800">ملخص السداد</h4><div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2"><div><p class="text-sm text-slate-500">اسم المستثمر:</p><p class="font-medium">{{ data.customer?.name }}</p></div>@if(data.invoice){<div><p class="text-sm text-slate-500">تاريخ الاستحقاق:</p><p class="font-medium">{{ data.invoice.dueDate }}</p></div>}<div><p class="text-sm text-slate-500">تاريخ الدفع:</p><p class="font-medium">{{ data.payment.paymentDate }}</p></div>@if(data.invoice){<div><p class="text-sm text-slate-500">المبلغ المستحق:</p><p class="font-medium">{{ dataService.formatCurrency(data.invoice.originalAmount, data.invoice.currency) }}</p></div>}<div><p class="text-sm text-green-600">المبلغ المحصل:</p><p class="font-bold text-green-600">{{ dataService.formatCurrency(data.payment.amount, data.payment.currency) }}</p></div>@if(data.invoice){<div><p class="text-sm text-red-600">المتبقي:</p><p class="font-bold text-red-600">{{ dataService.formatCurrency(data.remainingOnInvoice, data.invoice.currency) }}</p></div>}</div></div>
+                  <div class="p-4 border rounded-lg"><h4 class="text-lg font-bold text-slate-800">تفاصيل الدفعة</h4><div class="grid grid-cols-2 gap-4 mt-2"><div><p class="text-sm text-slate-500">طريقة الدفع:</p><p class="font-medium">{{ data.payment.method }}</p></div><div><p class="text-sm text-slate-500">البند:</p><p class="font-medium">{{ data.payment.description }}</p></div></div></div>
+                </div>
+              }
+            }
+            @case ('advancePayment') {
+              @if (state.data; as data) {
+                <div class="space-y-6">
+                  @if(paymentError(); as error) {
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                      <strong class="font-bold">خطأ!</strong>
+                      <span class="block sm:inline ml-2">{{ error }}</span>
+                    </div>
+                  }
+                  
+                  <div class="grid grid-cols-2 gap-4">
+                    <div><label class="block text-sm font-medium text-slate-700 mb-1">تاريخ الدفع</label><input type="date" [(ngModel)]="paymentDate" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm"></div>
+                    <div class="bg-green-50 p-3 rounded-lg"><label for="paymentAmountInput" class="block text-sm font-medium text-green-800">المبلغ المدفوع</label><input id="paymentAmountInput" type="number" [(ngModel)]="paymentAmount" class="mt-1 block w-full px-3 py-1.5 bg-white border border-green-300 rounded-md text-sm shadow-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 font-bold" placeholder="0.00"></div>
+                  </div>
+
+                  <div>
+                      <label for="paymentDesc" class="block text-sm font-medium text-slate-700">بند الدفع</label>
+                      <input type="text" [(ngModel)]="paymentDescription" id="paymentDesc" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm" placeholder="مثال: دفعة مقدمة">
+                  </div>
+
+                  <div><label for="paymentMethodSelectAdv" class="block text-sm font-medium text-slate-700">طريقة الدفع</label><select id="paymentMethodSelectAdv" [(ngModel)]="paymentMethod" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm rounded-md bg-white"><option value="نقدي">نقدي</option><option value="تحويل بنكي">تحويل بنكي</option><option value="شيك">شيك</option></select></div>
+                  @switch (paymentMethod()) { 
+                      @case('نقدي') { <div class="grid grid-cols-2 gap-4"><div><label class="block text-sm font-medium text-slate-600">اسم المستلم</label><input type="text" [(ngModel)]="paymentCashRecipient" class="mt-1 w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm"></div><div><label class="block text-sm font-medium text-slate-600">رقم الخزينة</label><input type="text" [(ngModel)]="paymentCashTreasury" class="mt-1 w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm"></div></div> }
+                      @case('تحويل بنكي') { <div class="grid grid-cols-2 gap-4"><div><label class="block text-sm font-medium text-slate-600">رقم الإيداع</label><input type="text" [(ngModel)]="paymentBankDepositId" class="mt-1 w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm"></div><div><label class="block text-sm font-medium text-slate-600">تاريخ الإيداع</label><input type="date" [(ngModel)]="paymentBankDate" class="mt-1 w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm"></div></div> }
+                      @case('شيك') { <div class="grid grid-cols-2 gap-4"><div><label class="block text-sm font-medium text-slate-600">رقم الشيك</label><input type="text" [(ngModel)]="paymentChequeNumber" class="mt-1 w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm"></div><div><label class="block text-sm font-medium text-slate-600">تاريخ الاستحقاق</label><input type="date" [(ngModel)]="paymentChequeDate" class="mt-1 w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm"></div></div> }
+                  }
+                  <div><label class="block text-sm font-medium text-slate-700">ملاحظات الدفعة</label><textarea [(ngModel)]="paymentNotes" rows="3" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm"></textarea></div>
+                  <div><label class="block text-sm font-medium text-slate-700">مرفقات</label><input type="file" class="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100"/></div>
+                </div>
+              }
+            }
+            @case ('paymentConfirmation') {
+              <div><p>هل أنت متأكد من تأكيد هذه الدفعة؟ سيتم نقلها إلى الإيرادات وتحديث حالة الفاتورة.</p></div>
+            }
+            @case ('paymentRejection') {
+              <div>
+                <label for="rejectionReason" class="block text-sm font-medium text-slate-700">سبب الرفض</label>
+                <textarea id="rejectionReason" [(ngModel)]="rejectionReason" rows="4" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm" placeholder="يرجى توضيح سبب رفض هذه الدفعة..."></textarea>
+                <p class="mt-2 text-xs text-slate-500">سيتم إعادة الفاتورة إلى حالة "مستحقة" وتسجيل سبب الرفض في الملاحظات.</p>
+              </div>
+            }
+            @case ('paymentEdit') {
+              <div class="space-y-6">
+                @if(paymentError(); as error) {
+                  <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                    <strong class="font-bold">خطأ!</strong>
+                    <span class="block sm:inline ml-2">{{ error }}</span>
+                  </div>
+                }
+                <div class="grid grid-cols-2 gap-4">
+                  <div><label class="block text-sm font-medium text-slate-700 mb-1">تاريخ الدفع</label><input type="date" [(ngModel)]="paymentDate" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm"></div>
+                  <div class="bg-green-50 p-3 rounded-lg"><label for="paymentAmountInputEdit" class="block text-sm font-medium text-green-800">المبلغ المدفوع</label><input id="paymentAmountInputEdit" type="number" [(ngModel)]="paymentAmount" class="mt-1 block w-full px-3 py-1.5 bg-white border border-green-300 rounded-md text-sm font-bold"></div>
+                </div>
+                <div><label for="paymentDescEdit" class="block text-sm font-medium text-slate-700">بند الدفع</label><input type="text" [(ngModel)]="paymentDescription" id="paymentDescEdit" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm"></div>
+                <div><label for="paymentMethodSelectEdit" class="block text-sm font-medium text-slate-700">طريقة الدفع</label><select id="paymentMethodSelectEdit" [(ngModel)]="paymentMethod" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 rounded-md bg-white"><option value="نقدي">نقدي</option><option value="تحويل بنكي">تحويل بنكي</option><option value="شيك">شيك</option></select></div>
+                @switch (paymentMethod()) { 
+                    @case('نقدي') { <div class="grid grid-cols-2 gap-4"><div><label class="block text-sm font-medium text-slate-600">اسم المستلم</label><input type="text" [(ngModel)]="paymentCashRecipient" class="mt-1 w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm"></div><div><label class="block text-sm font-medium text-slate-600">رقم الخزينة</label><input type="text" [(ngModel)]="paymentCashTreasury" class="mt-1 w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm"></div></div> }
+                    @case('تحويل بنكي') { <div class="grid grid-cols-2 gap-4"><div><label class="block text-sm font-medium text-slate-600">رقم الإيداع</label><input type="text" [(ngModel)]="paymentBankDepositId" class="mt-1 w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm"></div><div><label class="block text-sm font-medium text-slate-600">تاريخ الإيداع</label><input type="date" [(ngModel)]="paymentBankDate" class="mt-1 w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm"></div></div> }
+                    @case('شيك') { <div class="grid grid-cols-2 gap-4"><div><label class="block text-sm font-medium text-slate-600">رقم الشيك</label><input type="text" [(ngModel)]="paymentChequeNumber" class="mt-1 w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm"></div><div><label class="block text-sm font-medium text-slate-600">تاريخ الاستحقاق</label><input type="date" [(ngModel)]="paymentChequeDate" class="mt-1 w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm"></div></div> }
+                }
+                <div><label class="block text-sm font-medium text-slate-700">ملاحظات الدفعة</label><textarea [(ngModel)]="paymentNotes" rows="3" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm"></textarea></div>
+              </div>
+            }
+            @case ('paymentRevenueDetails') {
+              @if (paymentRevenueDetailsData(); as data) {
+                <div class="space-y-4">
+                  <div class="p-4 rounded-lg text-white font-bold text-center" [class]="data.status.class">
+                    الحالة: {{ data.status.text }}
+                  </div>
+
+                  <div class="border rounded-lg p-4">
+                    <h4 class="font-bold text-slate-800 mb-2">ملخص السداد</h4>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                      <div><p class="text-slate-500">رقم الإيصال:</p><p class="font-bold text-blue-600">{{ data.payment.paymentId }}</p></div>
+                      <div><p class="text-slate-500">تاريخ الاستحقاق:</p><p class="font-medium text-slate-700">{{ data.invoice?.dueDate || 'N/A' }}</p></div>
+                      <div><p class="text-slate-500">تاريخ التحصيل:</p><p class="font-medium text-slate-700">{{ data.payment.paymentDate }}</p></div>
+                      <div><p class="text-slate-500">المبلغ المستحق:</p><p class="font-bold text-red-600">{{ dataService.formatCurrency(data.invoice?.originalAmount || 0, data.payment.currency) }}</p></div>
+                      <div><p class="text-slate-500">المبلغ المحصل:</p><p class="font-bold text-green-600">{{ dataService.formatCurrency(data.payment.amount, data.payment.currency) }}</p></div>
+                      <div><p class="text-slate-500">المتبقي:</p><p class="font-bold text-black">{{ dataService.formatCurrency(data.remainingAmount, data.payment.currency) }}</p></div>
+                    </div>
+                  </div>
+                  
+                  <div class="border rounded-lg p-4">
+                     <h4 class="font-bold text-slate-800 mb-2">تفاصيل الدفع</h4>
+                     <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div><p class="text-slate-500">طريقة الدفع:</p><p class="font-medium">{{ data.payment.method }}</p></div>
+                        <div><p class="text-slate-500">البند:</p><p class="font-medium">{{ data.payment.description }}</p></div>
+                        <!-- <div><p class="text-slate-500">غرامة مطبقة:</p><p class="font-medium">لا</p></div> -->
+                         @if(data.payment.method === 'تحويل بنكي') {
+                            <div><p class="text-slate-500">البنك:</p><p class="font-medium">{{ data.payment.details?.bankName || 'غير محدد' }}</p></div>
+                            <div><p class="text-slate-500">تفاصيل التحويل:</p><p class="font-medium">{{ data.payment.details?.transferId || 'غير محدد' }}</p></div>
+                         }
+                     </div>
+                  </div>
+
+                  <div class="bg-gray-50 rounded-lg p-4">
+                    <h4 class="font-bold text-slate-800 mb-2">الملاحظات</h4>
+                    <p class="text-sm text-slate-600">{{ data.payment.notes || 'لا توجد ملاحظات.' }}</p>
+                  </div>
+
+                  <!-- This is the hidden printable receipt -->
+                  <div class="hidden">
+                    <div id="printable-receipt-content" class="bg-white p-8 rounded-lg shadow-lg w-full max-w-2xl mx-auto">
+                        <div class="flex justify-between items-center border-b pb-4">
+                            <div>
+                                <img src="https://placehold.co/100x40/e2e8f0/64748b?text=شعار+الشركة" alt="Company Logo" class="h-10">
+                                <p class="text-sm text-gray-600 mt-2">صندوق استصلاح الأراضي</p>
+                            </div>
+                            <div class="text-right">
+                                <h2 class="text-2xl font-bold">إيصال سداد</h2>
+                                <p class="text-sm text-gray-500">رقم: <span class="font-mono">{{ data.payment.paymentId }}</span></p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 mt-6">
+                            <div class="text-sm">
+                                <p class="text-gray-500 font-bold">من:</p>
+                                <p>صندوق استصلاح الأراضي</p>
+                                <p>محافظة الوادي الجديد</p>
+                            </div>
+                            <div class="text-sm text-right">
+                                <p class="text-gray-500 font-bold">إلى:</p>
+                                <p>{{ data.customerName }}</p>
+                                <p>تاريخ التحصيل: {{ data.payment.paymentDate }}</p>
+                            </div>
+                        </div>
+                        <div class="mt-8">
+                            <table class="w-full text-right text-sm">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="p-2">البند</th>
+                                        <th class="p-2">المبلغ</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="border-b">
+                                        <td class="p-2">{{ data.payment.description }}</td>
+                                        <td class="p-2 font-mono font-bold">{{ dataService.formatCurrency(data.payment.amount, data.payment.currency) }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="flex justify-between items-center mt-8">
+                            <div class="w-24 h-24 bg-gray-200 flex items-center justify-center">
+                               <img src="https://placehold.co/100x100/f1f5f9/94a3b8?text=QR+Code" alt="QR Code" />
+                            </div>
+                            <div class="text-right">
+                                <p class="text-gray-500">هذا الإيصال معتمد</p>
+                                <p class="mt-4 border-t pt-2">توقيع المستلم</p>
+                            </div>
+                        </div>
+                    </div>
+                  </div>
+
+                </div>
+              }
+            }
+            @case ('investorFinancialSummary') {
+              @if (investorFinancialSummaryData(); as data) {
+                 <div class="space-y-6">
+                  <div class="p-4 bg-blue-50 rounded-lg"><h4 class="text-lg font-bold text-blue-800">معلومات المستثمر</h4><div class="grid grid-cols-2 gap-4 mt-2"><div><p class="text-sm font-medium text-slate-500">اسم العميل:</p><p>{{ data.customer?.name }}</p></div><div><p class="text-sm font-medium text-slate-500">رقم الملف:</p><p>{{ data.customerDetails?.fileNumber || 'N/A' }}</p></div></div></div>
+                  @if(data.land; as land) { <div class="p-4 border rounded-lg"><h4 class="text-lg font-bold text-slate-800">بيانات الأرض (آخر معاملة)</h4><div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2"><div><p class="text-sm font-medium text-slate-500">المساحة:</p><p>{{ land.auctionInfo.landArea }} فدان</p></div><div><p class="text-sm font-medium text-slate-500">قيمة الإيجار/فدان:</p><p>{{ dataService.formatCurrency(land.financials.feddanRentalValue, land.currency || 'EGP') }}</p></div><div><p class="text-sm font-medium text-slate-500">التأمين:</p><p>{{ dataService.formatCurrency(land.financials.insurance, land.currency || 'EGP') }}</p></div><div><p class="text-sm font-medium text-slate-500">تاريخ الاستلام:</p><p>{{ land.basicInfo.receiveDate }}</p></div></div></div> }
+                  <div class="p-4 bg-gray-50 rounded-lg"><h4 class="text-lg font-bold text-slate-800">الملخص المالي الشامل</h4><div class="grid grid-cols-3 gap-4 mt-2 text-center"><div><p class="text-sm font-medium text-blue-800">إجمالي المستحق</p><p class="text-lg font-bold text-blue-800">{{ dataService.formatCurrency(data.totalDue, data.customer?.currency || 'EGP') }}</p></div><div><p class="text-sm font-medium text-green-600">إجمالي المحصل</p><p class="text-lg font-bold text-green-600">{{ dataService.formatCurrency(data.totalPaid, data.customer?.currency || 'EGP') }}</p></div><div><p class="text-sm font-medium text-red-600">إجمالي المتأخر</p><p class="text-lg font-bold text-red-600">{{ dataService.formatCurrency(data.totalOverdue, data.customer?.currency || 'EGP') }}</p></div></div></div>
+                </div>
+              }
+            }
+            @case ('tempInsuranceDetails') {
+              @if (tempInsuranceDetailsData(); as data) {
+                <div class="space-y-4">
+                  <div class="border-b pb-4">
+                    <h4 class="font-bold text-lg text-slate-800 mb-2">ملخص السداد</h4>
+                    <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                      <div><p class="text-slate-500">اسم المستثمر:</p><p class="font-medium">{{ data.customerName }}</p></div>
+                      <div><p class="text-slate-500">تاريخ التحصيل:</p><p class="font-medium">{{ data.payment.paymentDate }}</p></div>
+                      <div class="col-span-2"><p class="text-slate-500">بند السداد:</p><p class="font-medium">{{ data.payment.description }}</p></div>
+                    </div>
+                  </div>
+                  <div class="border-b pb-4">
+                    <h4 class="font-bold text-lg text-slate-800 mb-2">تفاصيل الدفع</h4>
+                    <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm p-4 bg-gray-50 rounded-lg">
+                      @switch(data.payment.method) {
+                        @case('نقدي') {
+                          <div><p class="text-slate-500">اسم الخزينة:</p><p class="font-medium">{{ data.payment.details?.treasury || 'N/A' }}</p></div>
+                          <div><p class="text-slate-500">مسؤول الاستلام:</p><p class="font-medium">{{ data.payment.details?.recipient || 'N/A' }}</p></div>
+                        }
+                        @case('تحويل بنكي') {
+                          <div><p class="text-slate-500">اسم البنك:</p><p class="font-medium">{{ data.payment.details?.bankName || 'N/A' }}</p></div>
+                          <div><p class="text-slate-500">رقم التحويل:</p><p class="font-medium">{{ data.payment.details?.transferId || 'N/A' }}</p></div>
+                        }
+                        @case('شيك') {
+                          <div><p class="text-slate-500">رقم الشيك:</p><p class="font-medium">{{ data.payment.details?.chequeNumber || 'N/A' }}</p></div>
+                          <div><p class="text-slate-500">تاريخ الاستحقاق:</p><p class="font-medium">{{ data.payment.details?.dueDate || 'N/A' }}</p></div>
+                        }
+                      }
+                    </div>
+                  </div>
+                   <div>
+                    <h4 class="font-bold text-lg text-slate-800 mb-2">المرفقات</h4>
+                    @if(data.payment.documentUrl && data.payment.documentUrl !== '#') {
+                      <a [href]="data.payment.documentUrl" target="_blank" class="text-blue-600 hover:underline">عرض المرفق</a>
+                    } @else {
+                      <p class="text-sm text-slate-500">لا يوجد مرفق.</p>
+                    }
+                   </div>
+                   <div class="bg-gray-50 rounded-lg p-4">
+                    <h4 class="font-bold text-lg text-slate-800 mb-2">الملاحظات</h4>
+                    <p class="text-sm text-slate-600">{{ data.payment.notes || 'لا توجد ملاحظات.' }}</p>
+                  </div>
+                </div>
+              }
+            }
+          }
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="flex justify-end items-center p-4 bg-slate-50 border-t rounded-b-xl space-x-2 space-x-reverse">
+          @if (state.type === 'reminderConfirm') { <button (click)="close()" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border rounded-md hover:bg-slate-50">إلغاء</button> <button (click)="confirmReminder()" class="px-4 py-2 text-sm font-medium text-white bg-sky-600 rounded-md hover:bg-sky-700">نعم، أرسل التذكير</button> }
+          @if (state.type === 'payment') { <button (click)="close()" class="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-200 rounded-md hover:bg-slate-300">إلغاء</button> <button (click)="savePayment()" class="px-6 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700">إرسال للمراجعة</button> }
+          @if (state.type === 'warning') { <button (click)="printWarning()" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border rounded-md hover:bg-slate-50 flex items-center gap-2"><i data-lucide="printer"></i>طباعة</button> <button (click)="close()" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border rounded-md hover:bg-slate-50 mx-2">إلغاء</button> <button (click)="sendWarning()" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700">إرسال وتسجيل الإنذار</button> }
+          @if (state.type === 'financialPayment') { <button (click)="close()" class="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-200 rounded-md hover:bg-slate-300">إلغاء</button> <button (click)="saveFinancialPayment()" class="px-6 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700">إرسال للمراجعة</button> }
+          @if (state.type === 'investorDetails') { <button (click)="printGeneric('تفاصيل المستثمر', '#investor-details-content')" class="px-4 py-2 text-sm font-medium text-white bg-sky-600 rounded-lg hover:bg-sky-700 flex items-center gap-2"><i data-lucide="printer"></i>طباعة</button> }
+          @if (state.type === 'paymentReceipt') { <button (click)="printGeneric('إيصال السداد', '#payment-receipt-content')" class="px-4 py-2 text-sm font-medium text-white bg-sky-600 rounded-lg hover:bg-sky-700 flex items-center gap-2"><i data-lucide="printer"></i>طباعة الإيصال</button> }
+          @if (state.type === 'advancePayment') { <button (click)="close()" class="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-200 rounded-md hover:bg-slate-300">إلغاء</button> <button (click)="saveAdvancePayment()" class="px-6 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700">إرسال للمراجعة</button> }
+          @if (state.type === 'paymentConfirmation') { <button (click)="close()" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border rounded-md hover:bg-slate-50">إلغاء</button> <button (click)="confirmPaymentAction()" class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700">تأكيد الدفع</button> }
+          @if (state.type === 'paymentRejection') { <button (click)="close()" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border rounded-md hover:bg-slate-50">إلغاء</button> <button (click)="rejectPaymentAction()" [disabled]="!rejectionReason()" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:bg-red-300">رفض الدفع</button> }
+          @if (state.type === 'paymentEdit') { <button (click)="close()" class="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-200 rounded-md hover:bg-slate-300">إلغاء</button> <button (click)="updatePaymentAction()" class="px-6 py-2 text-sm font-medium text-white bg-sky-600 rounded-lg hover:bg-sky-700">حفظ التعديلات</button> }
+          @if (state.type === 'paymentRevenueDetails') { 
+              <button (click)="close()" class="px-4 py-2 text-sm font-medium text-slate-700 bg-gray-200 rounded-md hover:bg-gray-300">إغلاق</button> 
+              <button (click)="printReceipt()" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 flex items-center gap-2"><i data-lucide="printer"></i>طباعة الإيصال</button>
+              <button (click)="printReceipt()" class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 flex items-center gap-2"><i data-lucide="download"></i>تحميل PDF</button> 
+          }
+          @if (['reminderLog', 'paymentDetails', 'invoiceDetails', 'warningDetails', 'investorFinancialSummary', 'tempInsuranceDetails'].includes(state.type)) { <button (click)="close()" class="px-6 py-2 text-sm font-medium text-white bg-slate-700 rounded-md hover:bg-slate-800">إغلاق</button> }
+        </div>
+
+      </div>
+    </div>
+  }
+}

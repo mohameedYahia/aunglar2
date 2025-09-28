@@ -1,0 +1,19 @@
+@if (customer(); as c) {
+  <div class="bg-white rounded-xl shadow-md p-6">
+    <div class="flex justify-between items-start">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-800">{{ c.name }}</h1>
+        <div class="flex items-center gap-2 text-gray-500 mt-1">
+          <i [attr.data-lucide]="c.investorType === 'شركة' ? 'building' : 'user'" class="w-4 h-4"></i>
+          <span>{{ c.investorType }}</span>
+        </div>
+      </div>
+      <div>
+        <p class="font-semibold text-slate-500">حالة المستثمر:</p>
+        <span class="px-3 py-1 text-sm font-medium rounded-full" [class]="getCustomerStatusBadgeClass(dataService.getCustomerOverallStatus(c.id))">
+            {{ dataService.getCustomerOverallStatus(c.id) }}
+        </span>
+      </div>
+    </div>
+  </div>
+}

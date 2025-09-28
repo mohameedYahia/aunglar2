@@ -1,0 +1,52 @@
+<div class="space-y-6">
+  <a routerLink="/customer-accounts" class="text-sky-600 font-semibold hover:underline">&larr; العودة إلى قائمة العملاء</a>
+
+  @if (data(); as data) {
+    <!-- Customer Header -->
+    <app-customer-info-header [customer]="data.customer" />
+
+    <!-- Investor Details -->
+    <app-investor-details [details]="data.details" />
+
+    <!-- Lands Section -->
+    <div>
+        <h2 class="text-xl font-bold text-gray-800 my-4">ملف الأراضي المخصصة</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            @for(land of data.details.lands; track land.landId) {
+                <button 
+                    class="p-4 rounded-lg text-right transition-all border-2" 
+                    [class]="selectedLandId() === land.landId ? 'bg-sky-50 border-sky-500 shadow-md' : 'bg-white hover:bg-gray-50 border-transparent'"
+                    (click)="selectLand(land.landId)">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="map-pin" class="transition-colors" [class]="selectedLandId() === land.landId ? 'text-sky-600' : 'text-gray-400'"></i>
+                        <span class="font-bold text-lg">{{ land.auctionInfo?.landLocation || 'موقع غير محدد' }}</span>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-1">{{ land.landId }}</p>
+                </button>
+            }
+        </div>
+    </div>
+    
+    <!-- SELECTED LAND DETAILS -->
+    <app-land-details [land]="selectedLand()" [customer]="data.customer" />
+
+    <!-- Notes section -->
+    <div class="bg-white rounded-xl shadow-md p-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-2">ملاحظات عامة</h2>
+        <textarea 
+            class="w-full p-2 border rounded-md" 
+            rows="3"
+            [ngModel]="customerNotes()"
+            (ngModelChange)="customerNotes.set($event)"></textarea>
+        <div class="mt-4 flex justify-end">
+            <button class="px-6 py-2 rounded-lg bg-sky-600 text-white hover:bg-sky-700 flex items-center gap-2" (click)="saveNotes()">
+                <i data-lucide="save"></i>حفظ الملاحظات
+            </button>
+        </div>
+    </div>
+  } @else {
+    <div class="bg-white rounded-xl shadow-md p-6 text-center">
+        <p class="text-slate-600">جاري تحميل بيانات العميل...</p>
+    </div>
+  }
+</div>

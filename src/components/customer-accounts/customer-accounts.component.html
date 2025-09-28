@@ -1,0 +1,107 @@
+<header class="flex justify-between items-center mb-6">
+  <div class="relative w-full md:w-1/3">
+    <input 
+      type="text" 
+      placeholder="بحث باسم العميل..." 
+      [ngModel]="searchQuery()"
+      (ngModelChange)="searchQuery.set($event)"
+      class="w-full p-2 pr-10 rounded-lg border focus:ring-2 focus:ring-sky-500 focus:outline-none">
+    <i data-lucide="search" class="absolute top-1/2 left-3 transform -translate-y-1/2 text-gray-400"></i>
+  </div>
+</header>
+
+<div class="space-y-6">
+  <div class="bg-white rounded-xl shadow-md p-6">
+    <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-4">خيارات التصفية</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <label class="block text-md font-medium mb-2">آلية التعامل:</label>
+        <div class="flex flex-wrap gap-2">
+          @for(m of mechanisms; track m) {
+            <button 
+              class="px-4 py-2 text-sm font-semibold rounded-lg transition-all"
+              [class]="mechanismFilter() === m ? 'bg-sky-600 text-white shadow' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
+              (click)="setMechanismFilter(m)">
+              {{ m }}
+            </button>
+          }
+        </div>
+      </div>
+      <div>
+        <label class="block text-md font-medium mb-2">العملة:</label>
+        <div class="flex flex-wrap gap-2">
+           @for(cur of currencies | keyvalue; track cur.key) {
+            <button 
+              class="px-4 py-2 text-sm font-semibold rounded-lg transition-all"
+              [class]="currencyFilter() === cur.key ? 'bg-sky-600 text-white shadow' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
+              (click)="setCurrencyFilter(cur.key)">
+              {{ cur.value }}
+            </button>
+          }
+        </div>
+      </div>
+      <div>
+        <label class="block text-md font-medium mb-2">حالة المستثمر:</label>
+        <div class="flex flex-wrap gap-2">
+           @for(s of statuses; track s) {
+            <button 
+              class="px-4 py-2 text-sm font-semibold rounded-lg transition-all"
+              [class]="investorStatusFilter() === s ? 'bg-sky-600 text-white shadow' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
+              (click)="setInvestorStatusFilter(s)">
+              {{ s }}
+            </button>
+          }
+        </div>
+      </div>
+      <div>
+        <label class="block text-md font-medium mb-2">المركز:</label>
+        <select 
+          class="w-full p-2 border rounded-md bg-white"
+          [ngModel]="centerFilter()"
+          (ngModelChange)="centerFilter.set($event)">
+           @for(c of centers; track c) {
+            <option [value]="c">{{ c }}</option>
+          }
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-md p-6">
+    <h2 class="text-xl font-bold text-gray-800 mb-4">قائمة العملاء ({{ filteredCustomers().length }})</h2>
+    <div class="overflow-x-auto">
+      <table class="w-full text-right">
+        <thead class="border-b">
+          <tr>
+            <th class="p-4">اسم العميل</th>
+            <th class="p-4">نوع المستثمر</th>
+            <th class="p-4">الحالة</th>
+            <th class="p-4">الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of filteredCustomers(); track c.id) {
+            <tr class="border-b hover:bg-gray-50">
+              <td class="p-4 font-medium">{{ c.name }}</td>
+              <td class="p-4">{{ c.investorType }}</td>
+              <td class="p-4">
+                <span class="px-3 py-1 text-sm font-medium rounded-full" [class]="getStatusBadgeClass(dataService.getCustomerOverallStatus(c.id))">
+                  {{ dataService.getCustomerOverallStatus(c.id) }}
+                </span>
+              </td>
+              <td class="p-4">
+                <a [routerLink]="['/customer-details', c.id]" class="flex items-center gap-2 text-sky-600 hover:text-sky-800 font-semibold">
+                  <i data-lucide="eye" class="w-5 h-5"></i>عرض التفاصيل
+                </a>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+                <td colspan="4" class="text-center p-6 text-gray-500">لا يوجد عملاء يطابقون معايير البحث.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

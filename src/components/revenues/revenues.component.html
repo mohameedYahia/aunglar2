@@ -1,0 +1,112 @@
+<header class="flex justify-between items-center mb-6">
+  <h2 class="text-2xl font-bold text-slate-800">الإيرادات المحصلة</h2>
+</header>
+<div class="space-y-6">
+  <!-- Filters -->
+  <div class="bg-gray-50 text-gray-900 rounded-xl shadow-md p-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div>
+        <label for="month-filter" class="block text-sm font-medium mb-1">تصفية حسب التاريخ:</label>
+        <select id="month-filter" [(ngModel)]="monthFilter" class="w-full p-2 border border-gray-300 rounded-md bg-white focus:ring-blue-500 focus:border-blue-500">
+          <option value="all">كل الشهور</option>
+          @for(month of availableMonths(); track month.value) {
+            <option [value]="month.value">{{ month.label }}</option>
+          }
+        </select>
+      </div>
+      <div>
+        <label for="currency-filter" class="block text-sm font-medium mb-1">تصفية حسب العملة:</label>
+        <select id="currency-filter" [(ngModel)]="currencyFilter" class="w-full p-2 border border-gray-300 rounded-md bg-white focus:ring-blue-500 focus:border-blue-500">
+          @for(cur of currencies | keyvalue; track cur.key) {
+            <option [value]="cur.key">{{ cur.value }}</option>
+          }
+        </select>
+      </div>
+       <div>
+        <label for="center-filter" class="block text-sm font-medium mb-1">تصفية حسب المركز:</label>
+        <select id="center-filter" [(ngModel)]="centerFilter" class="w-full p-2 border border-gray-300 rounded-md bg-white focus:ring-blue-500 focus:border-blue-500">
+           @for(c of centers; track c) {
+            <option [value]="c">{{ c === 'all' ? 'كل المراكز' : c }}</option>
+          }
+        </select>
+      </div>
+      <div>
+        <label for="mechanism-filter" class="block text-sm font-medium mb-1">آلية التعامل:</label>
+        <select id="mechanism-filter" [(ngModel)]="mechanismFilter" class="w-full p-2 border border-gray-300 rounded-md bg-white focus:ring-blue-500 focus:border-blue-500">
+           @for(m of mechanisms; track m) {
+            <option [value]="m">{{ m === 'all' ? 'الكل' : m }}</option>
+          }
+        </select>
+      </div>
+       <div>
+        <label for="payment-method-filter" class="block text-sm font-medium mb-1">طريقة الدفع:</label>
+        <select id="payment-method-filter" [(ngModel)]="paymentMethodFilter" class="w-full p-2 border border-gray-300 rounded-md bg-white focus:ring-blue-500 focus:border-blue-500">
+           @for(pm of paymentMethods | keyvalue; track pm.key) {
+            <option [value]="pm.key">{{ pm.value }}</option>
+          }
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Center Section -->
+  <div class="bg-white rounded-xl shadow-md p-6 flex items-center gap-6">
+    <button (click)="calculateTopCenter()" class="flex items-center gap-2 px-4 py-2 bg-yellow-400 text-yellow-800 font-bold rounded-lg hover:bg-yellow-500 transition-colors">
+      <i data-lucide="trophy" class="w-5 h-5"></i>
+      عرض أعلى مركز تحصيل للشهر
+    </button>
+    <div class="flex-1 h-px bg-gray-200"></div>
+    <div class="text-lg">
+    @if(topCenterResult(); as result) {
+        @if (typeof result === 'string') {
+            <p [class]="result.includes('تحديد') ? 'text-red-600' : 'text-gray-500'">{{ result }}</p>
+        } @else if(result) {
+            <p>
+                <span class="font-medium">أعلى مركز تحصيل:</span>
+                <span class="font-bold text-blue-600">{{ result.center }}</span>
+                <span class="font-bold text-green-600 mx-2">{{ dataService.formatCurrency(result.amount, result.currency) }}</span>
+            </p>
+        }
+    }
+    </div>
+  </div>
+
+  <!-- Revenues Table -->
+  <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-right text-slate-600">
+        <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
+          <tr>
+            <th scope="col" class="px-6 py-3 font-medium">رقم الإيصال</th>
+            <th scope="col" class="px-6 py-3 font-medium">اسم المستثمر</th>
+            <th scope="col" class="px-6 py-3 font-medium">المركز</th>
+            <th scope="col" class="px-6 py-3 font-medium">المبلغ المحصل</th>
+            <th scope="col" class="px-6 py-3 font-medium">طريقة الدفع</th>
+            <th scope="col" class="px-6 py-3 font-medium text-center">الإجراء</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200">
+          @for(payment of filteredPayments(); track payment.paymentId) {
+              <tr class="hover:bg-gray-50 transition-colors">
+                  <td class="px-6 py-4 font-semibold text-blue-600">{{ payment.paymentId }}</td>
+                  <td class="px-6 py-4">{{ getCustomerName(payment.customerId) }}</td>
+                  <td class="px-6 py-4">{{ payment.customer?.center }}</td>
+                  <td class="px-6 py-4 font-bold text-green-600">{{ dataService.formatCurrency(payment.amount, payment.currency) }}</td>
+                  <td class="px-6 py-4">
+                    <span class="px-3 py-1 text-xs font-medium rounded-full" [class]="getPaymentMethodBadgeClass(payment.method)">
+                      {{ payment.method }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 text-center">
+                    <button (click)="openPaymentDetailsModal(payment)" class="font-medium text-blue-800 hover:underline px-2">تفاصيل السداد</button>
+                    <button (click)="openInvestorDetailsModal(payment)" class="font-medium text-purple-800 hover:underline px-2">تفاصيل المستثمر</button>
+                  </td>
+              </tr>
+          } @empty {
+               <tr><td colspan="6" class="text-center p-6 text-slate-500">لا توجد نتائج تطابق بحثك.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

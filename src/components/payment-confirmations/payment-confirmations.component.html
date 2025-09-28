@@ -1,0 +1,68 @@
+<header class="flex justify-between items-center mb-6">
+  <h2 class="text-2xl font-bold text-slate-800">إدارة المدفوعات</h2>
+</header>
+
+<div class="mb-6 flex justify-start">
+    <div class="relative">
+        <label for="status-filter" class="block text-sm font-medium text-slate-700 mb-1">تصفية حسب الحالة:</label>
+        <select id="status-filter"
+            class="w-full md:w-56 appearance-none pl-4 pr-10 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white"
+            [ngModel]="statusFilter()"
+            (ngModelChange)="statusFilter.set($event)">
+            @for (status of statusOptions; track status.key) {
+                <option [value]="status.key">{{ status.value }}</option>
+            }
+        </select>
+        <i data-lucide="chevron-down" class="absolute left-3 top-1/2 mt-3 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none"></i>
+    </div>
+</div>
+
+<div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm text-right text-slate-600">
+      <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
+        <tr>
+          <th scope="col" class="px-6 py-3 font-medium">رقم الدفعة</th>
+          <th scope="col" class="px-6 py-3 font-medium">اسم العميل</th>
+          <th scope="col" class="px-6 py-3 font-medium">المبلغ</th>
+          <th scope="col" class="px-6 py-3 font-medium">تاريخ الدفع</th>
+          <th scope="col" class="px-6 py-3 font-medium">الطريقة</th>
+          <th scope="col" class="px-6 py-3 font-medium">الفاتورة</th>
+          <th scope="col" class="px-6 py-3 font-medium">الحالة</th>
+          <th scope="col" class="px-6 py-3 font-medium text-center">الإجراءات</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-200">
+        @for(payment of filteredPayments(); track payment.paymentId) {
+            <tr class="hover:bg-slate-50">
+                <td class="px-6 py-4 font-medium text-slate-900">{{ payment.paymentId }}</td>
+                <td class="px-6 py-4">{{ getCustomerName(payment.customerId) }}</td>
+                <td class="px-6 py-4 font-semibold">{{ dataService.formatCurrency(payment.amount, payment.currency) }}</td>
+                <td class="px-6 py-4">{{ payment.paymentDate }}</td>
+                <td class="px-6 py-4">{{ payment.method }}</td>
+                <td class="px-6 py-4">{{ payment.invoiceId || 'دفعة مقدمة' }}</td>
+                <td class="px-6 py-4">
+                  <span class="px-3 py-1 text-xs font-medium rounded-full" [class]="getStatusBadgeClass(payment.status)">
+                    {{ statusMap[payment.status] }}
+                  </span>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="flex items-center justify-center space-x-1 space-x-reverse">
+                      @if (payment.status === 'pending_review') {
+                        <button (click)="openConfirmModal(payment)" title="تأكيد" class="p-2 text-green-600 hover:text-green-800 rounded-md hover:bg-green-50 transition-colors"><i data-lucide="check-circle" class="w-4 h-4"></i></button>
+                        <button (click)="openRejectModal(payment)" title="رفض" class="p-2 text-red-600 hover:text-red-800 rounded-md hover:bg-red-50 transition-colors"><i data-lucide="x-circle" class="w-4 h-4"></i></button>
+                      }
+                      <button (click)="openEditModal(payment)" title="تعديل" class="p-2 text-blue-600 hover:text-blue-800 rounded-md hover:bg-blue-50 transition-colors"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                      @if (payment.invoiceId) {
+                        <button (click)="openInvoiceDetailsModal(payment.invoiceId)" title="عرض تفاصيل الفاتورة" class="p-2 text-sky-600 hover:text-sky-800 rounded-md hover:bg-sky-50 transition-colors"><i data-lucide="file-text" class="w-4 h-4"></i></button>
+                      }
+                  </div>
+                </td>
+            </tr>
+        } @empty {
+             <tr><td colspan="8" class="text-center p-6 text-slate-500">لا توجد مدفوعات تطابق معايير البحث.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

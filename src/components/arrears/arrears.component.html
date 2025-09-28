@@ -1,0 +1,88 @@
+<header class="flex justify-between items-center mb-6">
+  <h2 class="text-2xl font-bold text-slate-800">شاشة المتأخرات</h2>
+</header>
+<div class="bg-white p-4 rounded-lg border border-slate-200 mb-6 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center space-x-4 space-x-reverse">
+        <div class="relative">
+            <i data-lucide="search" class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"></i>
+            <input 
+                type="text" 
+                placeholder="بحث باسم العميل..." 
+                class="w-full md:w-56 pl-4 pr-10 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sky-500"
+                [ngModel]="searchQuery()"
+                (ngModelChange)="searchQuery.set($event)">
+        </div>
+        <div class="relative">
+             <select 
+                class="w-full md:w-40 appearance-none pl-4 pr-10 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white"
+                [ngModel]="centerFilter()"
+                (ngModelChange)="centerFilter.set($event)">
+                @for(c of centers; track c) {
+                    <option [value]="c">{{ c === 'all' ? 'كل المراكز' : c }}</option>
+                }
+            </select>
+            <i data-lucide="chevron-down" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none"></i>
+        </div>
+         <div class="relative">
+             <select 
+                class="w-full md:w-40 appearance-none pl-4 pr-10 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white"
+                [ngModel]="currencyFilter()"
+                (ngModelChange)="currencyFilter.set($event)">
+                @for(cur of currencies | keyvalue; track cur.key) {
+                    <option [value]="cur.key">{{ cur.value }}</option>
+                }
+            </select>
+            <i data-lucide="chevron-down" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none"></i>
+        </div>
+    </div>
+</div>
+
+<div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm text-right text-slate-600">
+            <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
+                <tr>
+                    <th scope="col" class="px-6 py-3 font-medium">اسم العميل</th>
+                    <th scope="col" class="px-6 py-3 font-medium">رقم الفاتورة</th>
+                    <th scope="col" class="px-6 py-3 font-medium">تاريخ الاستحقاق</th>
+                    <th scope="col" class="px-6 py-3 font-medium">المبلغ المتبقي</th>
+                    <th scope="col" class="px-6 py-3 font-medium text-center">أيام التأخير</th>
+                    <th scope="col" class="px-6 py-3 font-medium text-center">الحالة</th>
+                    <th scope="col" class="px-6 py-3 font-medium text-center">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200">
+                @for(inv of filteredInvoices(); track inv.id) {
+                    @let delay = getDelayDays(inv);
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 font-medium text-slate-900">{{ getCustomerName(inv.customerId) }}</td>
+                        <td class="px-6 py-4">{{ inv.id }}</td>
+                        <td class="px-6 py-4">{{ inv.dueDate }}</td>
+                        <td class="px-6 py-4 font-semibold text-red-600">
+                           {{ dataService.formatCurrency(getRemainingAmount(inv), inv.currency) }}
+                        </td>
+                        <td class="px-6 py-4 text-center font-bold" [class.text-red-600]="delay > 0">
+                            {{ delay > 0 ? delay + ' يوم' : '-' }}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="px-3 py-1 text-xs font-medium rounded-full" [class]="getStatusBadgeClass(dataService.getInvoiceDisplayStatus(inv))">
+                              {{ dataService.getInvoiceDisplayStatus(inv) }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center justify-center space-x-1 space-x-reverse">
+                                <button (click)="openPaymentModal(inv)" title="تسجيل دفعة" class="p-2 text-sky-600 hover:text-sky-800 rounded-md hover:bg-sky-50 transition-colors"><i data-lucide="dollar-sign" class="w-4 h-4"></i></button>
+                                <button (click)="openInvoiceDetailsModal(inv)" title="عرض تفاصيل الفاتورة" class="p-2 text-sky-600 hover:text-sky-800 rounded-md hover:bg-sky-50 transition-colors"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                                <button (click)="openReminderConfirmModal(inv)" title="إرسال تذكير" class="p-2 text-sky-600 hover:text-sky-800 rounded-md hover:bg-sky-50 transition-colors"><i data-lucide="bell" class="w-4 h-4"></i></button>
+                                <button (click)="openWarningModal(inv)" title="إصدار إنذار" class="p-2 text-red-600 hover:text-red-800 rounded-md hover:bg-red-50 transition-colors"><i data-lucide="shield-alert" class="w-4 h-4"></i></button>
+                                <button (click)="openReminderLogModal(inv)" [disabled]="!inv.reminderLog?.length" title="عرض سجل التذكيرات" class="p-2 text-sky-600 hover:text-sky-800 rounded-md hover:bg-sky-50 transition-colors disabled:text-gray-400 disabled:cursor-not-allowed"><i data-lucide="history" class="w-4 h-4"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                } @empty {
+                    <tr><td colspan="7" class="text-center p-6 text-gray-500">لا توجد فواتير متأخرة حالياً.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

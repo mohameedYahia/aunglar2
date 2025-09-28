@@ -1,0 +1,35 @@
+<header class="flex justify-between items-center mb-6">
+  <h2 class="text-2xl font-bold text-slate-800">صيغة الانذارات</h2>
+  <button (click)="saveTemplate()" class="px-4 py-2 text-sm font-medium text-white bg-slate-700 rounded-md hover:bg-slate-800 flex items-center shadow-sm">
+    <i data-lucide="save" class="w-4 h-4 ml-2"></i>
+    <span>حفظ الصيغة</span>
+  </button>
+</header>
+
+<div class="bg-white p-6 rounded-lg border border-slate-200">
+  <div class="grid grid-cols-2 gap-6 mb-6">
+    <div>
+      <label for="gov-logo-input" class="block text-sm font-medium text-slate-700">شعار المحافظة (يمين)</label>
+      <input type="file" id="gov-logo-input" accept="image/*" class="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100"/>
+    </div>
+    <div>
+      <label for="fund-logo-input" class="block text-sm font-medium text-slate-700">شعار الصندوق (يسار)</label>
+      <input type="file" id="fund-logo-input" accept="image/*" class="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100"/>
+    </div>
+  </div>
+  <div>
+    <textarea #editor id="warning-template-editor"></textarea>
+  </div>
+  <div class="mt-4 p-4 bg-slate-100 rounded-md text-sm">
+    <p class="font-semibold">المتغيرات المتاحة:</p>
+    <p class="text-slate-600">سيتم استبدال المتغيرات التالية بالبيانات الفعلية عند إرسال الإنذار:</p>
+    <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2">
+      <code class="bg-slate-200 text-slate-800 px-2 py-1 rounded">[clientName]</code>
+      <code class="bg-slate-200 text-slate-800 px-2 py-1 rounded">[clientAddress]</code>
+      <code class="bg-slate-200 text-slate-800 px-2 py-1 rounded">[amountOverdue]</code>
+      <code class="bg-slate-200 text-slate-800 px-2 py-1 rounded">[area]</code>
+      <code class="bg-slate-200 text-slate-800 px-2 py-1 rounded">[center]</code>
+      <code class="bg-slate-200 text-slate-800 px-2 py-1 rounded">[deadline]</code>
+    </div>
+  </div>
+</div>

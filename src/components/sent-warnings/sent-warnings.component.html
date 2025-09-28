@@ -1,0 +1,38 @@
+<header class="flex justify-between items-center mb-6">
+  <h2 class="text-2xl font-bold text-slate-800">الانذارات المرسلة</h2>
+</header>
+<div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm text-right text-slate-600">
+      <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
+        <tr>
+          <th scope="col" class="px-6 py-3 font-medium">رقم الفاتورة</th>
+          <th scope="col" class="px-6 py-3 font-medium">اسم العميل</th>
+          <th scope="col" class="px-6 py-3 font-medium">المرسل</th>
+          <th scope="col" class="px-6 py-3 font-medium">تاريخ الارسال</th>
+          <th scope="col" class="px-6 py-3 font-medium text-center">الإجراء</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-200">
+        @for(warning of sentWarnings(); track warning.id) {
+            <tr class="hover:bg-slate-50">
+                <td class="px-6 py-4 font-medium text-slate-900">{{ warning.invoiceId }}</td>
+                <td class="px-6 py-4">{{ getCustomerName(warning.invoiceId) }}</td>
+                <td class="px-6 py-4">{{ warning.user }}</td>
+                <td class="px-6 py-4">{{ warning.timestamp }}</td>
+                <td class="px-6 py-4 text-center">
+                    <button 
+                      (click)="openWarningDetailsModal(warning)"
+                      class="inline-flex items-center justify-center py-1 px-2.5 rounded-md transition-all text-slate-600 hover:bg-slate-100 disabled:opacity-60 disabled:cursor-not-allowed">
+                        <span class="text-xs font-medium mr-1.5">تفاصيل الانذار</span>
+                        <i data-lucide="file-search" class="w-3.5 h-3.5"></i>
+                    </button>
+                </td>
+            </tr>
+        } @empty {
+             <tr><td colspan="5" class="text-center p-4 text-slate-500">لم يتم إرسال أي انذارات بعد.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

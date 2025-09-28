@@ -1,0 +1,91 @@
+<header class="flex justify-between items-center mb-6">
+  <h2 class="text-2xl font-bold text-slate-800">المستحقات المالية</h2>
+</header>
+
+<div class="space-y-6">
+  <!-- Filters -->
+  <div class="bg-white rounded-xl shadow-md p-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+      <div class="md:col-span-1">
+        <label for="search-input" class="block text-md font-medium mb-2 text-slate-700">بحث:</label>
+        <div class="relative">
+          <i data-lucide="search" class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none"></i>
+          <input 
+            id="search-input"
+            type="text" 
+            placeholder="باسم العميل, رقم الفاتورة..." 
+            class="w-full pl-4 pr-10 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sky-500"
+            [ngModel]="searchQuery()"
+            (ngModelChange)="searchQuery.set($event)">
+        </div>
+      </div>
+      <div class="md:col-span-1">
+        <label class="block text-md font-medium mb-2 text-slate-700">تصفية حسب المركز:</label>
+        <select class="w-full p-2 border border-gray-300 rounded-md bg-white" [(ngModel)]="centerFilter">
+          @for(c of centers; track c) { <option [value]="c">{{ c }}</option> }
+        </select>
+      </div>
+      <div class="md:col-span-1">
+        <label class="block text-md font-medium mb-2 text-slate-700">تصفية حسب العملة:</label>
+        <div class="flex flex-wrap gap-2">
+          @for(cur of currencies | keyvalue; track cur.key) {
+            <button (click)="currencyFilter.set(cur.key)" class="px-3 py-2 text-sm rounded-lg flex-grow transition-colors" [class]="currencyFilter() === cur.key ? 'bg-sky-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'">{{ cur.value }}</button>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Table -->
+  <div class="bg-white rounded-xl shadow-md overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-right">
+        <thead class="bg-slate-50 border-b">
+          <tr>
+            <th class="p-4 text-sm font-semibold text-slate-600">رقم الفاتورة</th>
+            <th class="p-4 text-sm font-semibold text-slate-600">اسم المستثمر</th>
+            <th class="p-4 text-sm font-semibold text-slate-600">تاريخ الاستحقاق</th>
+            <th class="p-4 text-sm font-semibold text-slate-600">المبلغ</th>
+            <th class="p-4 text-sm font-semibold text-slate-600">الحالة</th>
+            <th class="p-4 text-sm font-semibold text-slate-600 text-center">الإجراء</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (inv of filteredInvoices(); track inv.id) {
+            @let statusInfo = getStatusInfo(inv);
+            @let isPaid = statusInfo.text === 'مدفوع';
+            @let isUnderReview = statusInfo.text === 'قيد المراجعة';
+            <tr class="border-b hover:bg-gray-50">
+              <td class="p-4 font-medium">{{ inv.id }}</td>
+              <td class="p-4">{{ getCustomerName(inv.customerId) }}</td>
+              <td class="p-4">{{ inv.dueDate }}</td>
+              <td class="p-4 font-semibold">{{ dataService.formatCurrency(inv.originalAmount, inv.currency) }}</td>
+              <td class="p-4">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full" [class]="statusInfo.dotClass"></span>
+                  <span class="font-medium" [class]="statusInfo.textClass">{{ statusInfo.text }}</span>
+                </div>
+              </td>
+              <td class="p-4">
+                <div class="flex items-center justify-center gap-2">
+                  @if (isPaid) {
+                    @let latestPayment = getLatestPaymentForInvoice(inv.id);
+                    <button (click)="openInvestorDetailsModal(inv)" title="تفاصيل المستثمر" class="p-2 text-slate-500 hover:text-sky-600"><i data-lucide="user"></i></button>
+                    @if(latestPayment) {
+                      <button (click)="openReceiptModal(latestPayment)" title="عرض السداد" class="p-2 text-slate-500 hover:text-green-600"><i data-lucide="receipt"></i></button>
+                    }
+                  } @else {
+                    <button (click)="openInvestorDetailsModal(inv)" [disabled]="isUnderReview" title="عرض التفاصيل" class="p-2 text-slate-500 hover:text-sky-600 disabled:text-slate-300 disabled:cursor-not-allowed"><i data-lucide="eye"></i></button>
+                    <button (click)="openPaymentModal(inv)" [disabled]="isUnderReview" title="دفع" class="p-2 text-slate-500 hover:text-green-600 disabled:text-slate-300 disabled:cursor-not-allowed"><i data-lucide="credit-card"></i></button>
+                  }
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="text-center p-6 text-gray-500">لا توجد مستحقات تطابق معايير البحث.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

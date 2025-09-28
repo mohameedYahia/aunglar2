@@ -1,0 +1,5 @@
+{
+  "name": "Accounts Dashboard",
+  "description": "An advanced dashboard for managing customer accounts, tracking payments, handling arrears, and issuing warnings, designed for the accounts department. The application provides detailed views of customer financials, land ownership, and payment schedules in an intuitive, right-to-left Arabic interface.",
+  "requestFramePermissions": []
+}
