@@ -1,3 +1,4 @@
+
 // FIX: Removed self-import of `Customer` which caused a conflict with the local declaration of the same name.
 
 export interface Customer {
@@ -28,6 +29,7 @@ export interface Land {
     feddanRentalValue: number;
     insurance: number;
   };
+  auctionId?: string;
 }
 
 export interface CustomerDetails {

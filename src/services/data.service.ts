@@ -1,3 +1,4 @@
+
 import { Injectable, signal, computed } from '@angular/core';
 import { Customer, CustomerDetails, Invoice, Land, Payment, HistoryLogEntry, WarningTemplate } from '../models/data.models';
 
@@ -26,23 +27,27 @@ const INITIAL_STATE = {
     customerDetails: {
         1: { investorType: 'شركة', fileNumber: 'C-2023-101', companyNationality: 'مصرية', partnersNationality: 'مصرية', address: '123 شارع الجمهورية, القاهرة', email: 'contact@modern.com', companyPhone: '0225678901', commercialRegNum: '12345', commercialRegExpiry: '2028-12-31', taxCardNum: '54321-A', taxCardExpiry: '2027-10-15', issuingAuthority: 'مكتب استثمار القاهرة', companyActivity: 'مقاولات عامة وتوريدات', chairman: { name: 'أحمد محمود', phone: '01001234567' }, partners: [{ name: 'محمد خالد', phone: '01112345678' }], notes: 'تم التواصل مع العميل بتاريخ 2024-07-29 ووعد بالسداد خلال أسبوع.', lands: [
             { landId: 'LND-01A', mechanism: 'مزاد علني', basicInfo: { receiveDate: '2023-03-01', auctionSessionDate: '2023-02-15' }, auctionInfo: { landArea: 100, landLocation: 'شمال المدينة الصناعية' }, currency: 'EGP', baseRent: 150000, financials: { feddanValue: 200000, feddanRentalValue: 1500, insurance: 20000 } },
-            { landId: 'LND-01B', mechanism: 'مزاد علني', basicInfo: { receiveDate: '2023-10-01', auctionSessionDate: '2023-09-20' }, auctionInfo: { landArea: 50, landLocation: 'غرب المنطقة الحرة' }, currency: 'EGP', baseRent: 90000, financials: { feddanValue: 220000, feddanRentalValue: 1800, insurance: 22000 }  }
         ]},
         2: { investorType: 'فرد', nationalId: '28504032100123', phone: '01223456789', email: 'investor2@example.com', mailingAddress: 'ص.ب 150, الداخلة, الوادي الجديد', notes: '', lands: [
             { landId: 'LND-02A', mechanism: 'أمر مباشر', basicInfo: { receiveDate: '2023-01-01' }, auctionInfo: { landArea: 20, landLocation: 'المنطقة الحرة' }, currency: 'USD', baseRent: 5000, financials: { feddanValue: 3000, feddanRentalValue: 250, insurance: 600 } }
         ]},
         3: { investorType: 'شركة', chairman: {name: 'N/A', phone: 'N/A'}, partners: [], address: 'N/A', lands: [{ landId: 'LND-03A', mechanism: 'مبادرة', financials: {feddanRentalValue: 1100, feddanValue: 100000, insurance: 10000}, auctionInfo: {landArea: 70, landLocation: 'شرق بلاط'}, basicInfo: {receiveDate: '2022-05-10'}, baseRent: 77000, currency: 'EGP' }], notes:'' },
     } as {[key: number]: CustomerDetails},
+    auctionLands: [
+        { landId: 'LND-AUC-01', auctionId: 'A-101', mechanism: 'مزاد علني', basicInfo: { receiveDate: '2024-08-01', auctionSessionDate: '2024-07-15' }, auctionInfo: { landArea: 25, landLocation: 'جنوب الخارجة' }, currency: 'USD', baseRent: 6250, financials: { feddanValue: 3000, feddanRentalValue: 250, insurance: 500 } },
+        { landId: 'LND-AUC-02', auctionId: 'B-204', mechanism: 'مزاد علني', basicInfo: { receiveDate: '2023-10-01', auctionSessionDate: '2023-09-20' }, auctionInfo: { landArea: 50, landLocation: 'غرب المنطقة الحرة' }, currency: 'EGP', baseRent: 90000, financials: { feddanValue: 220000, feddanRentalValue: 1800, insurance: 22000 } },
+        { landId: 'LND-AUC-03', auctionId: 'C-301', mechanism: 'مزاد علني', basicInfo: { receiveDate: '2024-04-01', auctionSessionDate: '2024-03-15' }, auctionInfo: { landArea: 80, landLocation: 'شمال الفرافرة' }, currency: 'EGP', baseRent: 120000, financials: { feddanValue: 200000, feddanRentalValue: 1500, insurance: 15000 } }
+    ] as Land[],
     invoices: [
         { id: 'INV-005', customerId: 1, landId: 'LND-01A', description: 'تأمين ابتدائي', dueDate: '2023-02-20', originalAmount: 20000, currency: 'EGP', reminderLog: [], status: 'paid' },
     ] as Invoice[],
     payments: [
         { paymentId: 'PAY-001', invoiceId: 'INV-005', customerId: 1, landId: 'LND-01A', paymentDate: '2023-02-20', amount: 20000, currency: 'EGP', method: 'تحويل بنكي', description: 'تأمين ابتدائي', details: { bankName: 'بنك مصر', transferId: 'TRN584399' }, documentUrl: '#', notes: 'تم استلام المبلغ وتأكيد التحويل.', status: 'confirmed' },
         { paymentId: 'PAY-002', invoiceId: null, customerId: 1, landId: 'LND-01A', paymentDate: '2024-07-20', amount: 100000, currency: 'EGP', method: 'شيك', description: 'دفعة مقدمة من قيمة ايجارية 2024', details: { chequeNumber: 'CHK100548', dueDate: '2024-07-20' }, documentUrl: '#', notes: 'الشيك تحت التحصيل.', status: 'confirmed' },
-        { paymentId: 'PAY-003', invoiceId: null, customerId: 2, landId: 'LND-02A', paymentDate: '2023-01-05', amount: 500, currency: 'USD', method: 'نقدي', description: 'تأمين مؤقت لمزاد A-101', details: {treasury: 'T-01', recipient: 'علي حسن'}, documentUrl: '#', notes: '', status: 'confirmed', auctionId: 'A-101', tempInsuranceStatus: 'booked' },
-        { paymentId: 'PAY-004', invoiceId: null, customerId: 1, landId: 'LND-01B', paymentDate: '2023-09-18', amount: 10000, currency: 'EGP', method: 'تحويل بنكي', description: 'تأمين مؤقت لمزاد B-204', details: {bankName: 'البنك الأهلي', transferId: 'TRN99834'}, documentUrl: '#', notes: '', status: 'confirmed', auctionId: 'B-204', tempInsuranceStatus: 'awarded' },
-        { paymentId: 'PAY-005', invoiceId: null, customerId: 3, landId: 'LND-03A', paymentDate: '2024-03-10', amount: 15000, currency: 'EGP', method: 'شيك', description: 'تأمين مؤقت لمزاد C-301', details: {chequeNumber: 'CHK20583', dueDate: '2024-03-10'}, documentUrl: '#', notes: 'تم استرجاع التأمين لعدم الترسية', status: 'confirmed', auctionId: 'C-301', tempInsuranceStatus: 'returned' },
-        { paymentId: 'PAY-006', invoiceId: null, customerId: 1, landId: 'LND-01A', paymentDate: '2024-01-20', amount: 25000, currency: 'EGP', method: 'نقدي', description: 'تأمين مؤقت لمزاد A-101', details: {treasury: 'T-02', recipient: 'محمد سعيد'}, documentUrl: '#', notes: '', status: 'confirmed', auctionId: 'A-101', tempInsuranceStatus: 'booked' },
+        { paymentId: 'PAY-003', invoiceId: null, customerId: 2, landId: 'LND-AUC-01', paymentDate: '2023-01-05', amount: 500, currency: 'USD', method: 'نقدي', description: 'تأمين ابتدائي مؤقت لمزاد A-101', details: {treasury: 'T-01', recipient: 'علي حسن'}, documentUrl: '#', notes: '', status: 'confirmed', auctionId: 'A-101', tempInsuranceStatus: 'booked' },
+        { paymentId: 'PAY-004', invoiceId: null, customerId: 1, landId: 'LND-AUC-02', paymentDate: '2023-09-18', amount: 10000, currency: 'EGP', method: 'تحويل بنكي', description: 'تأمين ابتدائي مؤقت لمزاد B-204', details: {bankName: 'البنك الأهلي', transferId: 'TRN99834'}, documentUrl: '#', notes: '', status: 'confirmed', auctionId: 'B-204', tempInsuranceStatus: 'awarded' },
+        { paymentId: 'PAY-005', invoiceId: null, customerId: 3, landId: 'LND-AUC-03', paymentDate: '2024-03-10', amount: 15000, currency: 'EGP', method: 'شيك', description: 'تأمين ابتدائي مؤقت لمزاد C-301', details: {chequeNumber: 'CHK20583', dueDate: '2024-03-10'}, documentUrl: '#', notes: 'تم استرجاع التأمين لعدم الترسية', status: 'confirmed', auctionId: 'C-301', tempInsuranceStatus: 'returned' },
+        { paymentId: 'PAY-006', invoiceId: null, customerId: 1, landId: 'LND-AUC-01', paymentDate: '2024-01-20', amount: 25000, currency: 'EGP', method: 'نقدي', description: 'تأمين ابتدائي مؤقت لمزاد A-101', details: {treasury: 'T-02', recipient: 'محمد سعيد'}, documentUrl: '#', notes: '', status: 'confirmed', auctionId: 'A-101', tempInsuranceStatus: 'booked' },
 
     ] as Payment[],
     historyLog: [] as HistoryLogEntry[],
@@ -58,6 +63,7 @@ export class DataService {
     warningTemplate: signal<WarningTemplate>(INITIAL_STATE.warningTemplate),
     customers: signal<Customer[]>(INITIAL_STATE.customers),
     customerDetails: signal<{[key: number]: CustomerDetails}>(INITIAL_STATE.customerDetails),
+    auctionLands: signal<Land[]>(INITIAL_STATE.auctionLands),
     invoices: signal<Invoice[]>(INITIAL_STATE.invoices),
     payments: signal<Payment[]>(INITIAL_STATE.payments),
     historyLog: signal<HistoryLogEntry[]>(INITIAL_STATE.historyLog),
@@ -68,6 +74,7 @@ export class DataService {
   customers = this.state.customers.asReadonly();
   // FIX: Expose customerDetails signal to be used in components.
   customerDetails = this.state.customerDetails.asReadonly();
+  auctionLands = this.state.auctionLands.asReadonly();
   payments = this.state.payments.asReadonly();
   historyLog = this.state.historyLog.asReadonly();
   warningTemplate = this.state.warningTemplate.asReadonly();
@@ -201,6 +208,11 @@ export class DataService {
 
   getTempInsurances() {
     return computed(() => this.state.payments().filter(p => p.auctionId && p.tempInsuranceStatus));
+  }
+  
+  getAuctionLandByAuctionId(auctionId: string | undefined) {
+    if (!auctionId) return computed(() => null);
+    return computed(() => this.state.auctionLands().find(l => l.auctionId === auctionId) ?? null);
   }
 
   // --- Business Logic & Helpers ---
@@ -433,10 +445,28 @@ export class DataService {
   }
 
   awardInsurance(paymentId: string) {
+      const payment = this.state.payments().find(p => p.paymentId === paymentId);
+      if (!payment || !payment.auctionId) return;
+
+      const landToAward = this.state.auctionLands().find(l => l.auctionId === payment.auctionId);
+      if (!landToAward) return;
+      
+      // Add land to customer
+      this.state.customerDetails.update(details => {
+        if(details[payment.customerId]) {
+          details[payment.customerId].lands.push(landToAward);
+        }
+        return {...details};
+      });
+
+      // Remove land from auction pool
+      this.state.auctionLands.update(lands => lands.filter(l => l.auctionId !== payment.auctionId));
+
+      // Update payment status
       this.state.payments.update(payments => {
-          const payment = payments.find(p => p.paymentId === paymentId);
-          if (payment) {
-              payment.tempInsuranceStatus = 'awarded';
+          const p = payments.find(p => p.paymentId === paymentId);
+          if (p) {
+              p.tempInsuranceStatus = 'awarded';
           }
           return [...payments];
       });

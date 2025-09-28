@@ -1,3 +1,4 @@
+
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -242,9 +243,12 @@ export class ModalComponent {
     if (!payment) return null;
 
     const customer = this.dataService.customers().find(c => c.id === payment.customerId);
+    const land = this.dataService.getAuctionLandByAuctionId(payment.auctionId)();
+    
     return {
         payment,
-        customerName: customer?.name || 'غير معروف'
+        customerName: customer?.name || 'غير معروف',
+        land
     };
   });
 

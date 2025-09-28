@@ -8,7 +8,7 @@ interface Installment {
   period: string;
   originalAmount: number;
   dueDate: string;
-  status: 'مستحق السداد' | 'قادم' | 'مدفوع مقدماً' | 'مدفوع جزئياً مقدماً';
+  status: 'قادم' | 'مدفوع مقدماً' | 'مدفوع جزئياً مقدماً' | 'متأخر' | 'متأخر (جزئي)';
   paidAmount: number;
   remainingAmount: number;
   appliedPayments: { paymentId: string; paymentDate: string; amountApplied: number }[];
@@ -33,46 +33,82 @@ export class LandDetailsComponent {
     return this.dataService.invoices().filter(inv => inv.landId === currentLand.landId);
   });
 
-  landPayments = computed(() => {
+  invoiceAndAdvancePayments = computed(() => {
     const currentLand = this.land();
     if (!currentLand) return [];
-    return this.dataService.payments().filter(p => p.landId === currentLand.landId);
+    return this.dataService.payments().filter(p => 
+        p.landId === currentLand.landId && 
+        !p.tempInsuranceStatus
+    );
   });
 
+  tempInsurancePayments = computed(() => {
+    const currentLand = this.land();
+    if (!currentLand) return [];
+    return this.dataService.payments().filter(p => 
+        p.landId === currentLand.landId && 
+        !!p.tempInsuranceStatus
+    );
+  });
+  
   dueLandInvoices = computed(() => {
-    return this.landInvoices().filter(inv => inv.status !== 'paid' && inv.status !== 'reviewed');
+    const currentYear = this.dataService.today().getFullYear();
+    const allInvoicesForLand = this.landInvoices();
+
+    return allInvoicesForLand.filter(inv => {
+        const effectiveStatus = this.getEffectiveStatus(inv);
+        if (effectiveStatus === 'مدفوع' || effectiveStatus === 'مدفوع مقدماً' || effectiveStatus === 'مؤرشف') {
+            return false;
+        }
+
+        const invoiceYear = new Date(inv.dueDate).getFullYear();
+        return invoiceYear <= currentYear;
+    });
   });
 
   totalDueOnLand = computed(() => {
-    // Note: This calculates based on existing invoices, not the future schedule.
     return this.landInvoices().reduce((sum, inv) => sum + inv.originalAmount, 0);
   });
 
   totalPaidOnLand = computed(() => {
-    return this.landPayments().reduce((sum, p) => sum + p.amount, 0);
+    const currentLand = this.land();
+    if (!currentLand) return 0;
+    return this.dataService.payments()
+        .filter(p => 
+            p.landId === currentLand.landId && 
+            p.status === 'confirmed' && 
+            p.tempInsuranceStatus !== 'returned'
+        )
+        .reduce((sum, p) => sum + p.amount, 0);
   });
 
   totalRemainingOnLand = computed(() => {
       const totalDue = this.landInvoices().reduce((sum, inv) => {
-        if (inv.status !== 'paid' && inv.status !== 'reviewed') {
-          return sum + (inv.originalAmount - this.dataService.getPaidAmountForInvoice(inv.id));
+        const status = this.getEffectiveStatus(inv);
+        if (status !== 'مدفوع' && status !== 'مدفوع مقدماً' && status !== 'مؤرشف') {
+          return sum + this.getEffectiveRemainingAmount(inv);
         }
         return sum;
       }, 0);
       return totalDue;
   });
 
+  customerHasOverdueInvoices = computed(() => {
+    return this.dataService.getOverdueInvoices()().some(inv => inv.customerId === this.customer().id);
+  });
+
   futureInstallments = computed<Installment[]>(() => {
     const currentLand = this.land();
     if (!currentLand) return [];
 
-    const rawInstallments: {period: string; amount: number; dueDate: string; status: 'مستحق السداد' | 'قادم'}[] = [];
+    const rawInstallments: {period: string; amount: number; dueDate: string;}[] = [];
     const receiveDate = new Date(currentLand.basicInfo.receiveDate);
     const baseAmount = currentLand.baseRent;
     const today = this.dataService.today();
 
     const formatDate = (d: Date) => d.toISOString().split('T')[0];
 
+    // --- Generate Raw Installment Schedule ---
     if (currentLand.mechanism === 'مزاد علني') {
         const graceEndDate = new Date(receiveDate);
         graceEndDate.setFullYear(graceEndDate.getFullYear() + 2);
@@ -81,81 +117,67 @@ export class LandDetailsComponent {
         let annualAmount = baseAmount;
         let lastDueDate = new Date(graceEndDate);
 
-        // Year 1 after grace
-        rawInstallments.push({ period: 'السنة الأولى - دفعة 1', amount: annualAmount * 0.20, dueDate: formatDate(lastDueDate), status: lastDueDate < today ? 'مستحق السداد' : 'قادم'});
+        rawInstallments.push({ period: 'السنة الأولى - دفعة 1', amount: annualAmount * 0.20, dueDate: formatDate(lastDueDate)});
         lastDueDate.setMonth(lastDueDate.getMonth() + 6);
-        rawInstallments.push({ period: 'السنة الأولى - دفعة 2', amount: annualAmount * 0.40, dueDate: formatDate(lastDueDate), status: lastDueDate < today ? 'مستحق السداد' : 'قادم'});
+        rawInstallments.push({ period: 'السنة الأولى - دفعة 2', amount: annualAmount * 0.40, dueDate: formatDate(lastDueDate)});
         lastDueDate.setMonth(lastDueDate.getMonth() + 6);
-        rawInstallments.push({ period: 'السنة الأولى - دفعة 3', amount: annualAmount * 0.40, dueDate: formatDate(lastDueDate), status: lastDueDate < today ? 'مستحق السداد' : 'قادم'});
+        rawInstallments.push({ period: 'السنة الأولى - دفعة 3', amount: annualAmount * 0.40, dueDate: formatDate(lastDueDate)});
         
-        // Subsequent 24 years
         for(let i = 2; i <= 25; i++) {
-            annualAmount *= 1.02; // 2% increase
+            annualAmount *= 1.02; 
             lastDueDate.setMonth(lastDueDate.getMonth() + 6);
-            rawInstallments.push({ period: `السنة ${i} - دفعة 1`, amount: annualAmount * 0.50, dueDate: formatDate(lastDueDate), status: lastDueDate < today ? 'مستحق السداد' : 'قادم'});
+            rawInstallments.push({ period: `السنة ${i} - دفعة 1`, amount: annualAmount * 0.50, dueDate: formatDate(lastDueDate)});
             lastDueDate.setMonth(lastDueDate.getMonth() + 6);
-            rawInstallments.push({ period: `السنة ${i} - دفعة 2`, amount: annualAmount * 0.50, dueDate: formatDate(lastDueDate), status: lastDueDate < today ? 'مستحق السداد' : 'قادم'});
+            rawInstallments.push({ period: `السنة ${i} - دفعة 2`, amount: annualAmount * 0.50, dueDate: formatDate(lastDueDate)});
         }
-
     } else { // 'أمر مباشر' or 'مبادرة'
         const graceEndDate = new Date(receiveDate);
         graceEndDate.setFullYear(graceEndDate.getFullYear() + 2);
-
         let annualAmount = baseAmount;
         for (let i = 1; i <= 25; i++) {
-            if (i > 1) {
-                annualAmount *= 1.02; // 2% increase from year 2
-            }
+            if (i > 1) annualAmount *= 1.02;
             const dueDate = new Date(graceEndDate);
             dueDate.setFullYear(graceEndDate.getFullYear() + i -1);
-            rawInstallments.push({
-                period: `قسط سنوي - سنة ${i}`,
-                amount: annualAmount,
-                dueDate: formatDate(dueDate),
-                status: dueDate < today ? 'مستحق السداد' : 'قادم'
-            });
+            rawInstallments.push({ period: `قسط سنوي - سنة ${i}`, amount: annualAmount, dueDate: formatDate(dueDate) });
         }
     }
     
-    // Get advance payments and calculate remaining credit for each
+    // --- Process Installments with Payments ---
     const advancePayments = this.dataService.payments()
-        .filter(p => 
-            p.customerId === this.customer().id &&
-            p.landId === currentLand.landId &&
-            p.invoiceId === null &&
-            p.status === 'confirmed'
-        )
+        .filter(p => p.customerId === this.customer().id && p.landId === currentLand.landId && p.status === 'confirmed' && p.invoiceId === null && (!p.tempInsuranceStatus || p.tempInsuranceStatus === 'awarded'))
         .map(p => ({ ...p, remainingAmount: p.amount }));
 
     const processedInstallments: Installment[] = [];
-
     for (const inst of rawInstallments) {
-        let paidAmount = 0;
-        let remainingAmount = inst.amount;
-        let newStatus: 'مستحق السداد' | 'قادم' | 'مدفوع مقدماً' | 'مدفوع جزئياً مقدماً' = inst.status;
+        const syntheticId = `AUTO-${currentLand.landId}-${inst.dueDate}`;
+        const directPaidAmount = this.dataService.getPaidAmountForInvoice(syntheticId);
+        
+        let paidAmount = directPaidAmount;
+        let remainingAmount = inst.amount - paidAmount;
         const appliedPayments: { paymentId: string; paymentDate: string; amountApplied: number }[] = [];
-
-        if (newStatus === 'قادم') {
+        
+        if (remainingAmount > 0) {
             for (const payment of advancePayments) {
-                if (payment.remainingAmount > 0 && remainingAmount > 0) {
+                if (payment.remainingAmount > 0) {
                     const amountToApply = Math.min(payment.remainingAmount, remainingAmount);
-                    
                     paidAmount += amountToApply;
                     remainingAmount -= amountToApply;
                     payment.remainingAmount -= amountToApply;
-
-                    appliedPayments.push({
-                        paymentId: payment.paymentId,
-                        paymentDate: payment.paymentDate,
-                        amountApplied: amountToApply
-                    });
-
-                    if (remainingAmount <= 0) break; // Installment is fully paid
+                    appliedPayments.push({ paymentId: payment.paymentId, paymentDate: payment.paymentDate, amountApplied: amountToApply });
+                    if (remainingAmount <= 0) break;
                 }
             }
+        }
 
-            if(paidAmount > 0) {
-                newStatus = remainingAmount <= 0 ? 'مدفوع مقدماً' : 'مدفوع جزئياً مقدماً';
+        let newStatus: Installment['status'];
+        const isOverdue = new Date(inst.dueDate) < today;
+        if (remainingAmount <= 0) {
+            newStatus = 'مدفوع مقدماً';
+        } else {
+            if (isOverdue) {
+                newStatus = paidAmount > 0 ? 'متأخر (جزئي)' : 'متأخر';
+            } else {
+                newStatus = paidAmount > 0 ? 'مدفوع جزئياً مقدماً' : 'قادم';
             }
         }
         
@@ -173,6 +195,33 @@ export class LandDetailsComponent {
     return processedInstallments;
   });
 
+  processedInstallmentsMap = computed(() => {
+    const map = new Map<string, Installment>();
+    const landId = this.land()?.landId;
+    if (landId) {
+        this.futureInstallments().forEach(inst => {
+            const syntheticId = `AUTO-${landId}-${inst.dueDate}`;
+            map.set(syntheticId, inst);
+        });
+    }
+    return map;
+  });
+
+  getEffectiveRemainingAmount(invoice: Invoice): number {
+    const processedData = this.processedInstallmentsMap().get(invoice.id);
+    if (processedData) {
+        return processedData.remainingAmount;
+    }
+    return invoice.originalAmount - this.dataService.getPaidAmountForInvoice(invoice.id);
+  }
+
+  getEffectiveStatus(invoice: Invoice): string {
+    const processedData = this.processedInstallmentsMap().get(invoice.id);
+    if (processedData) {
+        return processedData.status;
+    }
+    return this.dataService.getInvoiceDisplayStatus(invoice);
+  }
 
   getDelayDaysForInvoice(invoice: Invoice): number {
     return this.dataService.calculateDelayDays(invoice.dueDate, this.dataService.today());
@@ -196,6 +245,24 @@ export class LandDetailsComponent {
         'مدفوع جزئياً مقدماً': 'bg-cyan-100 text-cyan-800'
     };
     return styles[status] || 'bg-gray-100 text-gray-800';
+  }
+
+  getTempInsuranceStatusBadgeClass(status: string | undefined): string {
+    const styles: { [key: string]: string } = {
+      'booked': 'bg-blue-100 text-blue-800',
+      'awarded': 'bg-green-100 text-green-800',
+      'returned': 'bg-red-100 text-red-800',
+    };
+    return status ? styles[status] : 'bg-gray-100 text-gray-800';
+  }
+
+  getTempInsuranceStatusText(status: string | undefined): string {
+    const texts: { [key: string]: string } = {
+      'booked': 'محجوز',
+      'awarded': 'مرسى عليه',
+      'returned': 'مسترجع',
+    };
+    return status ? texts[status] : 'N/A';
   }
 
   // --- Modal Triggers ---

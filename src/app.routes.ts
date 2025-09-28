@@ -1,3 +1,4 @@
+
 import { Routes } from '@angular/router';
 import { CustomerAccountsComponent } from './components/customer-accounts/customer-accounts.component';
 import { CustomerDetailsComponent } from './components/customer-details/customer-details.component';
@@ -18,7 +19,7 @@ export const APP_ROUTES: Routes = [
   { path: 'financial-dues', component: FinancialDuesComponent, data: { title: 'المستحقات المالية' } },
   { path: 'payment-confirmations', component: PaymentConfirmationsComponent, data: { title: 'تأكيد المدفوعات' } },
   { path: 'ownership', component: PlaceholderComponent, data: { title: 'تمليك' } },
-  { path: 'temp-insurance', component: TempInsuranceComponent, data: { title: 'تامين مؤقت' } },
+  { path: 'temp-insurance', component: TempInsuranceComponent, data: { title: 'تأمين ابتدائي مؤقت' } },
   { path: 'revenues', component: RevenuesComponent, data: { title: 'الايرادات' } },
   { path: 'warning-templates', component: WarningTemplatesComponent },
   { path: '', redirectTo: 'customer-accounts', pathMatch: 'full' },

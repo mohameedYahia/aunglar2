@@ -1,3 +1,4 @@
+
 @if (modalState(); as state) {
   @if (state.type) {
     <div 
@@ -27,7 +28,7 @@
             @case ('paymentEdit') { <h3 class="text-lg font-bold text-slate-800">تعديل بيانات الدفعة: {{ state.data.paymentId }}</h3> }
             @case ('paymentRevenueDetails') { <h3 class="text-lg font-bold text-slate-800">تفاصيل السداد</h3> }
             @case ('investorFinancialSummary') { <h3 class="text-lg font-bold text-slate-800">تفاصيل المستثمر</h3> }
-            @case ('tempInsuranceDetails') { <h3 class="text-lg font-bold text-slate-800">تفاصيل تحصيل التأمين المؤقت</h3> }
+            @case ('tempInsuranceDetails') { <h3 class="text-lg font-bold text-slate-800">تفاصيل تحصيل التأمين الابتدائي المؤقت</h3> }
           }
           <button (click)="close()" class="p-2 rounded-full text-slate-500 hover:bg-slate-100"><i data-lucide="x"></i></button>
         </div>
@@ -388,6 +389,17 @@
                       <div class="col-span-2"><p class="text-slate-500">بند السداد:</p><p class="font-medium">{{ data.payment.description }}</p></div>
                     </div>
                   </div>
+
+                  @if (data.land; as land) {
+                    <div class="border-b pb-4">
+                        <h4 class="font-bold text-lg text-slate-800 mb-2">بيانات الأرض المتزايد عليها</h4>
+                         <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm p-4 bg-blue-50 rounded-lg">
+                            <div><p class="text-slate-500">موقع الأرض:</p><p class="font-medium">{{ land.auctionInfo.landLocation }}</p></div>
+                            <div><p class="text-slate-500">مساحة الأرض:</p><p class="font-medium">{{ land.auctionInfo.landArea }} فدان</p></div>
+                         </div>
+                    </div>
+                  }
+
                   <div class="border-b pb-4">
                     <h4 class="font-bold text-lg text-slate-800 mb-2">تفاصيل الدفع</h4>
                     <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm p-4 bg-gray-50 rounded-lg">

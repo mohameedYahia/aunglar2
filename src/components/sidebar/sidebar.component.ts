@@ -1,3 +1,4 @@
+
 import { ChangeDetectionStrategy, Component, effect } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
@@ -17,7 +18,7 @@ export class SidebarComponent {
     { path: '/sent-warnings', label: 'الانذارات المرسلة', icon: 'shield-alert' },
     { path: '/financial-dues', label: 'المستحقات المالية', icon: 'calendar' },
     { path: '/ownership', label: 'تمليك', icon: 'home' },
-    { path: '/temp-insurance', label: 'تامين مؤقت', icon: 'shield' },
+    { path: '/temp-insurance', label: 'تأمين ابتدائي مؤقت', icon: 'shield' },
     { path: '/revenues', label: 'الايرادات', icon: 'trending-up' },
     { path: '/warning-templates', label: 'صيغة الانذارات', icon: 'file-text' }
   ];
